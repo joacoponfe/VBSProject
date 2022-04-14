@@ -1,3 +1,6 @@
+import numpy as np
+from dtcwt_matlab import FSfarras
+
 # Example 1 (Test de comparación con Matlab)
 #x = np.array([1,2,3,4,5,6])
 #Faf, Fsf = FSfarras()

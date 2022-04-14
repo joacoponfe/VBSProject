@@ -15,7 +15,7 @@ from pydsm import audio_weightings
 
 
 def plot_response(fs, w, h, title):
-    "Utility function to plot response functions"
+    """Utility function to plot response functions"""
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.plot(0.5*fs*w/np.pi, 20*np.log10(np.abs(h)))
@@ -61,12 +61,12 @@ def plot_response(fs, w, h, title):
 # #print('hello')
 
 
-fs = 20000.0         # Sample rate, Hz
-band = [6000, 8000]  # Desired stop band, Hz
-trans_width = 200    # Width of transition from pass band to stop band, Hz
-numtaps = 175        # Size of the FIR filter.
-edges = [0, band[0] - trans_width, band[0], band[1], band[1] + trans_width, 0.5*fs]
-taps = remez(numtaps, edges, [0, 1, 0], Hz=fs)
-w, h = freqz(taps, [1], worN=2000)
-plot_response(fs, w, h, "Band-stop Filter")
-plt.show()
+# fs = 20000.0         # Sample rate, Hz
+# band = [6000, 8000]  # Desired stop band, Hz
+# trans_width = 200    # Width of transition from pass band to stop band, Hz
+# numtaps = 175        # Size of the FIR filter.
+# edges = [0, band[0] - trans_width, band[0], band[1], band[1] + trans_width, 0.5*fs]
+# taps = remez(numtaps, edges, [0, 1, 0], Hz=fs)
+# w, h = freqz(taps, [1], worN=2000)
+# plot_response(fs, w, h, "Band-stop Filter")
+# plt.show()
