@@ -39,28 +39,26 @@ def peakdetect(r, Fs, thresh, Fmin):
     peaks = properties['peak_heights']
     i = 0
     minpeak = Fmin
-    minpeakbin = (minpeak/Fs)*s_win+1
+    minpeakbin = (minpeak/Fs)*s_win
     maxpeak = np.floor(Fs/2)  # Nyquist
-    maxpeakbin = (maxpeak/Fs)*s_win+1
+    maxpeakbin = (maxpeak/Fs)*s_win
     for j in locations:
         if j < minpeakbin or j > maxpeakbin:
             peaks = np.delete(peaks, i)
             locations = np.delete(locations, i)
         else:
             i = i+1
-    exact = locations
+    exact = locations.astype('float64')
     exact_peak = peaks
     i = 0
     if locations.size != 0:  # Checks if array isn't empty
         for j in locations:
+            # For a more precise peak location, quadratic interpolation is used.
             ym1 = rdB[j-1]
             y0 = rdB[j]
             yp1 = rdB[j+1]
-            #y = [ym1, y0, yp1]
-            #t = np.linspace(0, 2, 3)
-            #f = interp1d(t, y, kind='quadratic')
             p, y, a = qint(ym1, y0, yp1)
-            exact[i] = j+p-1
+            exact[i] = j+p
             exact_peak[i] = y
             i = i+1
     return exact, exact_peak

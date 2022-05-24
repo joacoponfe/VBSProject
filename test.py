@@ -26,6 +26,23 @@ def plot_response(fs, w, h, title):
     ax.set_ylabel('Gain (dB)')
     ax.set_title(title)
 
+
+def plot_audio(x, fs, title):
+    """Function to plot audio in the time domain.
+    Inputs:
+        x: audio data (array)
+        fs: sampling frequency (float)
+        title: title of the plot (string)
+    """
+    t = np.linspace(0, len(x)/fs, len(x))
+    plt.figure()
+    plt.title(title)
+    plt.plot(t, x)
+    plt.grid()
+    plt.xlabel('Tiempo (s)')
+    plt.ylabel('Amplitud')
+
+
 # #x, Fs, path, duration, frames, channels = audioRead('audios/classical_mono_ref.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/pluck.wav')
 # nWin = 2048
@@ -70,3 +87,24 @@ def plot_response(fs, w, h, title):
 # w, h = freqz(taps, [1], worN=2000)
 # plot_response(fs, w, h, "Band-stop Filter")
 # plt.show()
+
+# DT-CWT
+# Define number of levels to use
+# N = len(x_lp)  # Calculate length of signal
+# if not np.log2(N).is_integer():
+#     J = int(np.ceil(np.log2(N)))  # Rounds up to the nearest integer
+#     N2 = 2 ** J  # Define new length as nearest power of two
+#     x_l = np.append(x_lp, np.zeros(N2 - N))  # Zero pad
+#
+# # Check that lowest frequency band is < 10 Hz.
+# lowest_freq = Fs / (2 ** J)
+# while lowest_freq > 10:
+#     # More levels/scales are required
+#     J = J + 1  # Increase level
+#     lowest_freq = Fs / (2 ** J)  # Recompute lowest frequency
+#     N2 = 2 ** J
+#     x_l = np.append(x, np.zeros(N2 - N))
+#
+# Faf, Fsf = FSfarras()  # 1st stage analysis and synthesis filters
+# af, sf = dualfilt1()  # Remaining stages anal. and synth. filters
+# x_coeffs, w_coeffs = dualtree1D(x_l, J, Faf, af)

@@ -9,11 +9,11 @@ def LPF1(x, N=2000, SidelobeAtten=60, Fc=2000, Fs=44100):
         x: input signal
         N: filter order (default is 2000).
         SidelobeAtten: side lobe attenuation (default is 60)
-        Fc: cutoff frequency (default is 2000)
+        Fc: cutoff frequency (default is 2000) ¿POR QUÉ NO 250 Hz (como puse en el marco teórico)?
         Fs: sampling rate (default is 44100)"""
     b = firwin(N+1, Fc/(Fs/2), pass_zero='lowpass', window=('chebwin', SidelobeAtten), scale=True)
     y = lfilter(b, [1.0], x)
-    return y
+    return y, b
 
 
 def HPF1(x, N=2000, SidelobeAtten=60, Fc=2000, Fs=44100):
@@ -27,7 +27,7 @@ def HPF1(x, N=2000, SidelobeAtten=60, Fc=2000, Fs=44100):
         Fs: sampling rate (default is 44100)"""
     b = firwin(N+1, Fc/(Fs/2), pass_zero='highpass', window=('chebwin', SidelobeAtten), scale=True)
     y = lfilter(b, [1.0], x)
-    return y
+    return y, b
 
 
 def HPFlspk(x, N=3000, SidelobeAtten=80, Fc=150, Fs=44100):
@@ -43,7 +43,23 @@ def HPFlspk(x, N=3000, SidelobeAtten=80, Fc=150, Fs=44100):
     b = firwin(N+1, Fc/(Fs/2), pass_zero='highpass', window=('chebwin', SidelobeAtten), scale=True)
     # Apply filter
     y = lfilter(b, [1.0], x)
-    return y
+    return y, b
+
+
+def LPFlspk(x, N=3000, SidelobeAtten=80, Fc=150, Fs=44100):
+    """Loudspeaker simulation low pass filter.
+    From Moliner et al. (2020)
+    INPUT
+        x: input signal
+        N: filter order (default is 3000).
+        SidelobeAtten: side lobe attenuation (default is 80)
+        Fc: cutoff frequency (default is 150)
+        Fs: sampling rate (default is 44100)"""
+    # Design filter
+    b = firwin(N+1, Fc/(Fs/2), pass_zero='lowpass', window=('chebwin', SidelobeAtten), scale=True)
+    # Apply filter
+    y = lfilter(b, [1.0], x)
+    return y, b
 
 
 def LPFt(x, N=500, SidelobeAtten=40, Fc=150, Fs=44100):
