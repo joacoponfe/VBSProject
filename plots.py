@@ -94,3 +94,10 @@ def plot_audio(x, fs, title=''):
     plt.xlabel('Tiempo [s]')
     plt.ylabel('Amplitud')
     plt.show()
+
+
+#def plot_F0detection(r, )
+#    """Plots spectrogram of specific frame, peaks detected, borders delimited by f0min and f0max,
+#    F0 search regions, """
+
+

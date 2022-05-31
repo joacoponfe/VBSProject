@@ -43,6 +43,47 @@ def plot_audio(x, fs, title):
     plt.ylabel('Amplitud')
 
 
+def fracdelay(delay, N):
+    """Implements a fractional delay filter.
+    Based on: https://tomroelandts.com/articles/how-to-create-a-fractional-delay-filter.
+
+    Parameters
+    ----------
+    delay : float
+        Fractional delay (in samples)
+    N : int
+        Filter order
+
+    Returns
+    -------
+    h : ndarray
+        Fractional delay filter coefficients.
+    """
+    n = np.arange(N)
+
+    # Compute sinc filter
+    h = np.sinc(n - (N - 1) / 2 - delay)
+
+    # Multiply sinc filter by window
+    h *= np.blackman(N)
+
+    # Normalize to get unity gain
+    h /= np.sum(h)
+
+    return h
+
+
+def lagrange(delay, N):
+    n = np.arange(N)
+    h = np.ones(N+1)
+    for k in np.arange(N):
+        index = np.where(n != k)[0]
+        for i in index:
+            h[i] = h[i] * (delay - k) / (n[i] - k)
+    return h
+
+
+
 # #x, Fs, path, duration, frames, channels = audioRead('audios/classical_mono_ref.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/pluck.wav')
 # nWin = 2048
