@@ -22,10 +22,13 @@ from plots import plot_response, plot_spectrogram, plot_audio, plot_harmonics, p
 from NLD import NLD
 from test import fracdelay, lagrange
 
+# Other settings
+np.seterr(invalid='ignore')  # To ignore RuntimeWarnings
+
 # Load input audio
 # x, Fs, path, duration, frames, channels = audioRead('audios/music/classical_mono_ref.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/music/jazz_mono_ref.wav')
-x, Fs, path, duration, frames, channels = audioRead('audios/music/pop_mono_ref.wav')
+# x, Fs, path, duration, frames, channels = audioRead('audios/music/pop_mono_ref.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/music/rock_mono_ref.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/test/pluck.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/test/xilo.wav')
@@ -34,6 +37,9 @@ x, Fs, path, duration, frames, channels = audioRead('audios/music/pop_mono_ref.w
 # x, Fs, path, duration, frames, channels = audioRead('audios/museval/metronome_pad_mix.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/museval/MCA/tonal_museval.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/museval/MCA/transient_museval.wav')
+# x, Fs, path, duration, frames, channels = audioRead('audios/museval/stimulusB.wav')
+x, Fs, path, duration, frames, channels = audioRead('audios/museval/MCA/B_MCA_tonal.wav')
+# x, Fs, path, duration, frames, channels = audioRead('audios/museval/MCA/B_MCA_transient.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_1kHz_Amp_1.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_1kHz_Amp_0.8.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_1kHz_Amp_0.5.wav')
@@ -49,7 +55,6 @@ if len(x) == 2:
 num_harmonics = 5  # Number of processed harmonics
 Fcc = 150  # Cut-off frequency [Hz] (MOLINER)
 # Fcc = 250  # Cut-off frequency [Hz] (Según lo que escribí en el Marco Teórico)
-GdB = 8  # NLD gain for transient calibration [dB]
 thresh_dB = -70  # Magnitude threshold for peak search [dB]
 inharmonicity_tolerance = 0.05  # Tolerance parameter (tau) for harmonic detection [%]
 alpha_low = 7  # Lower weighting limit in dB/oct
@@ -67,7 +72,7 @@ x_hp, b_hp1 = HPF1(x, N=N1, Fc=Fc1, Fs=Fs)
 
 # Low-pass filter
 x_lp, b_lp1 = LPF1(x, N=N1, Fc=Fc1, Fs=Fs)
-#x_lp = x  # sólo para fuzzy tests
+# x_lp = x  # sólo para fuzzy tests
 
 #############################################
 # Plot LPF1 and HPF1  filter response
@@ -79,16 +84,16 @@ x_lp, b_lp1 = LPF1(x, N=N1, Fc=Fc1, Fs=Fs)
 #############################################
 
 # Downsampling (hacerlo opcional)
-Fs2 = 4096
-# Fs2 = Fs
+#Fs2 = 4096
+Fs2 = Fs
 x_lp = resample(x_lp, Fs, Fs2, res_type='polyphase')
 # Polyphase filtering to match values from Matlab resample function.
 
 # Fuzzy separation (median filtering) based on Fitzgerald (2010).
 # STFT parameters
-#nWin = 2756  # Window size (2756 para mantener la relación de 16 entre 4096/256 y 44100/2756)
-#nWin = 1024
-nWin = 256
+nWin = 2756  # Window size (2756 para mantener la relación de 16 entre 4096/256 y 44100/2756)
+# nWin = 1024
+#nWin = 256
 Ra = 32  # Hop size
 noverlap = nWin - Ra  # Overlap size
 S = 1  # Time-Scale Modification Factor (TSM)
@@ -105,55 +110,17 @@ yfull = istft(X, Ra, win, win)
 #########################################################################
 # Para testear la separación
 # Tomamos desde la muestra nº nWin en adelante, para que se alineen los audios.
-#audioWrite('audios/museval/fuzzy_MCA/transient_MCA_Fuzzy.wav', yt[nWin:], Fs2)
-#audioWrite('audios/museval/fuzzy_MCA/tonal_MCA_Fuzzy.wav', ys[nWin:], Fs2)
-#audioWrite('audios/museval/fuzzy_MCA/noise_MCA_Fuzzy.wav', yn[nWin:], Fs2)
+#audioWrite('audios/museval/fuzzy_MCA/MCA_fuzzy_transient_stimulusB_2.wav', yt[nWin:], Fs2)
+audioWrite('audios/museval/fuzzy_MCA/MCA_fuzzy_tonal_stimulusB_2.wav', ys[nWin:], Fs2)
+#audioWrite('audios/museval/fuzzy_MCA/fuzzy_noise_stimulusB.wav', yn[nWin:], Fs2)
 #audioWrite('audios/museval/fuzzy_MCA/full_MCA_Fuzzy.wav', yfull[nWin:], Fs2)
 #########################################################################
-
-# # PLOT #
-#
-# plot_audio(x,Fs,'Pluck')
-# plt.show()
-# tt = (len(x)/Fs)/np.shape(X)[1]
-# xticks = np.asarray([0, 100, 200])
-# xticklabels = np.round(xticks*tt, 2)
-# xticklabels = [str(i) for i in xticklabels]
-# plt.figure()
-# plt.subplot(2, 2, 1)
-# plt.title('Original $X(m,k)$')
-# plt.imshow(abs(X), cmap='gray')
-# #plt.xticks(xticks, xticklabels)
-# plt.xlim([0, 200])
-# plt.ylabel('k')
-# plt.xlabel('m')
-# plt.subplot(2, 2, 2)
-# plt.title('Tonal $X_s(m,k)$')
-# plt.imshow(abs(Xs), cmap='gray')
-# #plt.xticks(xticks, xticklabels)
-# plt.xlim([0, 200])
-# #plt.ylabel('k')
-# plt.xlabel('m')
-# plt.subplot(2, 2, 3)
-# plt.title('Transitorio $X_t(m,k)$')
-# plt.imshow(abs(Xt), cmap='gray')
-# #plt.xticks(xticks, xticklabels)
-# plt.xlim([0, 200])
-# plt.ylabel('k')
-# plt.xlabel('m')
-# plt.subplot(2, 2, 4)
-# plt.title('Ruido $X_n(m,k)$')
-# plt.imshow(abs(Xn), cmap='gray')
-# #plt.xticks(xticks, xticklabels)
-# plt.xlim([0, 200])
-# #plt.ylabel('k')
-# plt.xlabel('m')
-# plt.show()
 
 # Transient processing (NLD)
 # LPF and HPF splitting
 Nt = 500  # Filter order
 SidelobeAtten = 40  # Window Side Lobe attenuation
+# TODO Warning: for attenuations lower than about 45 dB this window is not suitable for spectral analysis. See whether it should be changed
 wint = chebwin(Nt + 1, SidelobeAtten)  # Chebyshev Window
 # Apply low pass and high pass filters
 yt_lp, b_lp = LPFt(yt, Nt, SidelobeAtten, Fs=Fs2)
@@ -216,7 +183,8 @@ for n in np.arange(hN):
         yt_low_proc_2 = yt_low_proc_2 + h[n] * (yt_low_proc ** n)
 
 # Apply band pass filter (aplico solo uno, no dos como hace Moliner que en realidad es un LP y después un HP)
-NBPF1 = 200
+# NBPF1 = 200
+NBPF1 = 300
 # NBPF2 = 100
 yt_low_proc_bpf, b_bp = BPFt(yt_low_proc_2, N=NBPF1, Fs=Fs2)
 
@@ -259,7 +227,7 @@ while pin < pend:
 
     grain_proc = yt_low_proc_bpf_padded[pin:pin + N_gain]
     filtered_grain_proc = A_weight(grain_proc, Fs2)  # Debería ser un K weighting filter, pero por ahora uso un A.
-    power_proc = np.sum(filtered_grain_low ** 2) / N_gain
+    power_proc = np.sum(filtered_grain_proc ** 2) / N_gain
     # dB_proc[iii] = 10 * np.log10(power_proc)
     # np.append(dB_proc, 10 * np.log10(power_proc))
     dB_proc.append(10 * np.log10(power_proc))
@@ -279,17 +247,17 @@ zlen = int((N_gain + R_gain) / 2)
 dB_low_rs = np.concatenate((np.zeros(zlen), dB_low_rs))
 dB_proc_rs = np.concatenate((np.zeros(zlen), dB_proc_rs))
 difference_rs = np.concatenate((np.zeros(zlen), difference_rs))
-np.where(difference_rs < thresh_dB, difference_rs, 0)
-difference_rs = savgol_filter(difference_rs, int(N_gain / 2 + 1),
-                              2)  # Savitzky-Golay filter for smoothing (ver si usar otro)
+difference_rs[np.where(dB_low_rs < thresh_dB)[0]] = 0
+#difference_rs = savgol_filter(difference_rs, int(N_gain / 2 + 1),2)  # Savitzky-Golay filter for smoothing (ver si usar otro)
 difference_rs = difference_rs[0:len(yt_low_proc_bpf)]
 
 # Apply gain
+# Revisar esto, no está aplicando tanta ganancia como el código de Moliner de Matlab
 G = 10 ** (difference_rs / 20)
 yt_low_proc_gain = G * yt_low_proc_bpf
 
 # Reconstruction
-yt_proc = yt_hp + yt_low_proc_gain  # Adding high-pass filtered and processed low-pass signals together
+yt_proc = yt_hp + yt_low_proc_gain  # Adding high-pass filtered and processed low-passed signals together
 
 delay_transients = Nt / 2 + delay_low  # Delay for transient signal: N(LPFt)/2 + N(BPF)/2
 
@@ -304,54 +272,58 @@ delay_transients = Nt / 2 + delay_low  # Delay for transient signal: N(LPFt)/2 +
 # Initialization
 nBins, nFrames = np.shape(X)
 
-f0found = np.zeros(nFrames).astype('int')  # Which region f0 is found, ranges from 0 to 3. (0: not in any region, 1: first region, 2: second region, 3: third region).
-detected_f0 = np.zeros((3, nFrames))  # f0 frequency bins [nBin], and where in any of the 3 possible regions it is located.
-detected_f0_values = np.zeros((3, nFrames))  # F0 magnitude values [dB]
-detected_harmonics = np.zeros((num_harmonics, nFrames))         # Harmonic frequency bins [nBin]
+f0found = np.zeros(nFrames).astype('int')  # Which region f0 is found, ranges from 0 to 3.
+# 0: not in any region; 1: first region, 2: second region, 3: third region.
+detected_f0 = np.zeros(
+    (3, nFrames))  # f0 frequency bins [nBin], and where in any of the 3 possible regions it is located.
+detected_f0_values = np.zeros((3, nFrames))  # f0 magnitude values [dB]
+detected_harmonics = np.zeros((num_harmonics, nFrames))  # Harmonic frequency bins [nBin]
 detected_harmonics_values = np.zeros((num_harmonics, nFrames))  # Harmonic magnitude values [dB]
-fixed_low = np.zeros((nBins, nFrames)) * (-1) * np.inf          # Weighting envelope lower limit
-fixed_high = np.zeros((nBins, nFrames)) * np.inf                # Weighting envelope upper limit
-accum_phases = np.zeros(nBins)                                  # Accumulated phases
-YL = np.zeros((nBins, nFrames)).astype('complex')               # Synthesized tonal spectrogram
+fixed_low = np.zeros((nBins, nFrames)) * (-1) * np.inf  # Weighting envelope lower limit
+fixed_high = np.zeros((nBins, nFrames)) * np.inf  # Weighting envelope upper limit
+accum_phases = np.zeros(nBins)  # Accumulated phases
+YL = np.zeros((nBins, nFrames)).astype('complex')  # Synthesized tonal spectrogram
 
-# Estos son los índices/bins correspondientes a estas frecuencias, al parecer (?)
-f0max = Fcc * nWin / Fs2
-f0min = f0max / 4
+# Get frequency bins corresponding to f0max and f0min (Hz -> bin)
+f0max = Fcc * nWin / Fs2  # f0max is set as the cut-off frequency (Fcc)
+f0min = f0max / 4  # f0min is set as f0max/4
 
 # Harmonic enhancement variables
-freq_window_size = int(np.round(freq_window_Hz * nWin / Fs2))
-if freq_window_size % 2 == 0:                           # If window is even-sized
-    freq_window_size = freq_window_size + 1             # Becomes odd-sized
-freq_window = tukey(freq_window_size, 0.75)             # Region of influence window (w_ROI)
+freq_window_size = int(np.round(freq_window_Hz * nWin / Fs2))  # Size of frequency window in bins
+if freq_window_size % 2 == 0:  # If window is even-sized
+    freq_window_size = freq_window_size + 1  # Becomes odd-sized
+freq_window = tukey(freq_window_size, 0.75)  # Region of influence window (w_ROI)
 for i in np.argwhere(freq_window == 0):
     freq_window[i] = 1e-3
 
 # Harmonic weighting variables
-target_weights_timbre = np.zeros((nBins, nFrames))      # Weighting values
-numBands = 7                                            # Number of bark scale bands
+target_weights_timbre = np.zeros((nBins, nFrames))  # Weighting values
+numBands = 7  # Number of bark scale bands
 # Range of frequencies where the weighting will be applied (in Hz)
 # These specify the center frequencies (not edges) of the lowest and highest filters.
-range = [Fcc / 4, Fcc * num_harmonics]
+range_min = Fcc / 4
+range_max = Fcc * num_harmonics
+range = [range_min, range_max]
 
 # Filter bank, Bark scale TODO revisar la FB, no coincide con Matlab. Ya está hecho la conversión a Bark y lo de center freqs.
 FB, (cf, freqs) = compute_mat(num_bands=numBands, freq_min=range[0], freq_max=range[1], num_fft_bands=nWin,
                               sample_rate=Fs2, scale='bark')
 
-cf = bark_to_hertz(cf)
+cf = bark_to_hertz(cf)  # Center frequencies [Hz]
 
 FBB = np.zeros((nBins, numBands))
-FBB = FB.transpose()[:nBins, :]     # Mel Matrix for multiplying with Xs
-FBB = FBB / np.sum(FBB, 0)          # Una especie de normalización?
+FBB = FB.transpose()[:nBins, :]  # Mel Matrix for multiplying with Xs
+FBB = FBB / np.sum(FBB, 0)  # Some kind of normalization
 cfbins = np.round(cf * nWin / Fs2)  # Frequency bins corresponding to center frequencies of filterbank.
 
 # Tonal processing
 # Step 1: Fundamental and Harmonic detection
 for n in np.arange(nFrames):
     #n = 42  # DESPUES SACAR, ES PARA PRUEBAS
-    f = Xs[:, n] / nWin  # Me falta verificar por qué divide por nWin
-    r = np.abs(f)        # Magnitude spectrum
+    f = Xs[:, n] / nWin  # TODO see why it is normalized by nWin
+    r = np.abs(f)  # Magnitude spectrum
 
-    bark = np.dot(FBB.transpose(), r)   # Transform STFT spectrum to Bark spectrum
+    bark = np.dot(FBB.transpose(), r)  # Transform STFT spectrum to Bark spectrum
 
     # All local maxima in the magnitude spectrum are selected as peaks.
     # Fmin = Fcc / 4
@@ -364,54 +336,55 @@ for n in np.arange(nFrames):
 
     # Interpolation of peak position (index) in Bark frequency scale
     interpbark = np.zeros(nBins)
-    #fx = interp1d(cfbins, bark, kind='slinear')  # Interpolation function bark = f(cfbins)
-    #interpbark_xq = fx(xq)  # Values of interpolation at query points (xp)
+    # fx = interp1d(cfbins, bark, kind='slinear')           # Interpolation function bark = f(cfbins)
+    # interpbark_xq = fx(xq)                                # Values of interpolation at query points (xp)
     interpbark_xq = pchip_interpolate(cfbins, bark, xq)
-    interpbark[int(xq[0]):int(xq[-1] + 1)] = interpbark_xq  # Place interpolated values into interpbark vector (len = nBins)
-    interpbark = 20 * np.log10(interpbark)  # dB
+    interpbark[int(xq[0]):int(xq[-1] + 1)] = interpbark_xq  # Place interpolated values into interpbark vector
+    interpbark = 20 * np.log10(interpbark)                  # Convert to dB
 
     # Get locations and magnitudes of detected peaks that are below f0max (candidates for F0).
     locations_fundamental_all = exact[np.where(exact < f0max)[0]]  # Evaluate all locations of detected peaks
     peak_fundamental_all = exact_peak[np.where(exact < f0max)[0]]  # Evaluate all magnitudes of detected peaks
 
-    if np.size(peak_fundamental_all) != 0:
+    if np.size(peak_fundamental_all) != 0:     # If peaks have been detected
         # The maximum peak from the set of detected peaks is selected as the
         # fundamental candidate.
-        maxim = np.max(peak_fundamental_all)  # Magnitude of maximum
-        loc = np.argmax(peak_fundamental_all)  # Index of maximum
-        maximloc = locations_fundamental_all[loc]  # Frequency bin of maximum
-        alimit = maximloc * inharmonicity_tolerance
-        borders = np.array([1 / 3, 1 / 2, 1]) * f0max  # Borders of regions to find F0
+        maxim = np.max(peak_fundamental_all)            # Magnitude of maximum / f0 candidate
+        loc = np.argmax(peak_fundamental_all)           # Index of maximum / f0 candidate
+        maximloc = locations_fundamental_all[loc]       # Frequency bin of maximum / f0 candidate
+        alimit = maximloc * inharmonicity_tolerance     # Inharmonicity tolerance limit
+        borders = np.array([1 / 3, 1 / 2, 1]) * f0max   # Borders of regions to find f0
 
         # Evaluates whether the candidate is the true f0 component,
-        # or whether is could be the second harmonic of another peak in a lower frequency. (DONDE ESTÁ ESTO?)
+        # or whether it could be the second harmonic of another peak in a lower frequency.
 
         if maximloc / 3 > f0min:
-            f0cmin = (maximloc - alimit) / 3
-            f0cmax = (maximloc + alimit) / 3
-            a = np.min(abs(exact - maximloc / 3))   # Searches within detected peaks for a possible f0 candidate
-            s = np.argmin(abs(exact - maximloc / 3))    # Gets index
-            if f0cmin < exact[s] < f0cmax:   # If F0 candidate is within region of tolerance
-                b = np.where(exact[s] <= borders)[0][0]   # Find below which border the F0 candidate is located (0 = below first border, 1 = below second border, 2 = below third border)
-                detected_f0[b, n] = exact[s]    # Save detected F0 for this frame and in the region where it is located.
-                detected_f0_values[b, n] = exact_peak[s]
-                f0found[n] = b + 1  # 1 is added to allow following line to perform f0found[n] == 0 search.
+            f0cmin = (maximloc - alimit) / 3             # Determine lower inharmonicity tolerance limit
+            f0cmax = (maximloc + alimit) / 3             # Determine upper inharmonicity tolerance limit
+            a = np.min(abs(exact - maximloc / 3))        # Searches within detected peaks for a possible f0 candidate
+            s = np.argmin(abs(exact - maximloc / 3))     # Gets index
+            if f0cmin < exact[s] < f0cmax:               # If f0 candidate is within region of inharmonicity tolerance
+                b = np.where(exact[s] <= borders)[0][0]  # Find below which border the f0 candidate is located.
+                # (0 = below first border, 1 = below second border, 2 = below third border)
+                detected_f0[b, n] = exact[s]              # Save detected f0 position for this frame and in its region.
+                detected_f0_values[b, n] = exact_peak[s]  # Save detected f0 magnitude for this frame and in its region.
+                f0found[n] = b + 1               # 1 is added to allow following line to perform f0found[n] == 0 search.
 
-        if f0found[n] == 0 and maximloc / 2 > f0min:
-            f0cmin = (maximloc - alimit) / 2
-            f0cmax = (maximloc + alimit) / 2
-            a = np.min(abs(exact - maximloc / 2))
-            s = np.argmin(abs(exact - maximloc / 2))
-            if f0cmin < exact[s] < f0cmax:
-                b = np.where(exact[s] <= borders)[0][0]
-                detected_f0[b, n] = exact[s]
-                detected_f0_values[b, n] = exact_peak[s]
-                f0found[n] = b + 1
+        if f0found[n] == 0 and maximloc / 2 > f0min:   # If no f0 has been found and 1/2 of f0 candidate is above f0min
+            f0cmin = (maximloc - alimit) / 2           # Determine lower inharmonicity tolerance limit
+            f0cmax = (maximloc + alimit) / 2           # Determine upper inharmonicity tolerance limit
+            a = np.min(abs(exact - maximloc / 2))      # Searches within detected peaks for a possible f0 candidate
+            s = np.argmin(abs(exact - maximloc / 2))   # Gets index
+            if f0cmin < exact[s] < f0cmax:             # If f0 candidate is within region of inharmonicity tolerance
+                b = np.where(exact[s] <= borders)[0][0]   # Find below which border the f0 candidate is located.
+                detected_f0[b, n] = exact[s]              # Save detected f0 position for this frame and in its region.
+                detected_f0_values[b, n] = exact_peak[s]  # Save detected f0 magnitude for this frame and in its region.
+                f0found[n] = b + 1               # 1 is added to allow following line to perform f0found[n] == 0 search.
 
-        if f0found[n] == 0:
-            b = np.where(maximloc <= borders)[0][0]
-            detected_f0[b, n] = maximloc
-            detected_f0_values[b, n] = maxim
+        if f0found[n] == 0:                            # If no f0 has been found
+            b = np.where(maximloc <= borders)[0][0]    # Find below which border the f0 candidate is located
+            detected_f0[b, n] = maximloc               # Save detected f0 position for this frame and in its region.
+            detected_f0_values[b, n] = maxim           # Save detected f0 magnitude for this frame and in its region.
             f0found[n] = b + 1
 
         # Search all respective harmonics of f0
@@ -423,27 +396,31 @@ for n in np.arange(nFrames):
             # save as detected harmonics.
 
             # All harmonics should be located above the cut-off frequency (Fcc / f0max).
-            # The order of the harmonics to process depends on which interval F0 is located (Moliner et al., 2020).
+            # The order of the harmonics to process depends on which interval f0 is located (Moliner et al., 2020).
+            # This is established following Plomp's "rule" that for higher f0's, the first harmonics
+            # are more important, whereas for low f0's, harmonics fifth and higher are most important.
 
-            # fk = f2, f3, ..., fk+1 if f0 € [fc/2, fc]
-            # fk = f3, f4, ..., fk+2 if f0 € [fc/3, fc/2]
-            # fk = f4, f5, ..., fk+3 if f0 € [fc/4, fc/3]
+            # fk = f2, f3, ..., fk+1 if f0 € [fc/2, fc]    <-->  f0found[n] = 3
+            # fk = f3, f4, ..., fk+2 if f0 € [fc/3, fc/2]  <-->  f0found[n] = 2
+            # fk = f4, f5, ..., fk+3 if f0 € [fc/4, fc/3]  <-->  f0found[n] = 1
 
-            k = h + 5 - f0found[n]  # El 5 está porque f0found puede valer hasta 3, y en tal caso queremos que el segundo armónico (no F0) sea la F0 multiplicada por 2
+            k = h + 5 - f0found[n]  # Order of harmonic
+            # 5 is there because f0found ranges from 1 to 3,
+            # and in the latter case we want the second harmonic (not f0) to be 2*f0.
             fk = detected_f0[f0found[n] - 1, n] * k
 
-            a = np.min(abs(exact - fk))  # Position of harmonic candidate
+            a = np.min(abs(exact - fk))     # Position of harmonic candidate
             b = np.argmin(abs(exact - fk))  # Index of harmonic candidate
 
-            alimit = fk * inharmonicity_tolerance
+            alimit = fk * inharmonicity_tolerance   # Inharmonicity tolerance limit
 
             # If position of possible detected harmonic is within the region
-            # of inharmonicity tolerance, save as detected harmonic,
+            # of inharmonicity tolerance, save as detected harmonic;
             # otherwise, discard.
 
             if a < alimit:
-                detected_harmonics[h, n] = exact[b]  # Position of harmonic
-                detected_harmonics_values[h, n] = exact_peak[b]  # Value of harmonic
+                detected_harmonics[h, n] = exact[b]               # Position of harmonic
+                detected_harmonics_values[h, n] = exact_peak[b]   # Magnitude of harmonic
             else:
                 detected_harmonics[h, n] = 0
                 detected_harmonics_values[h, n] = 0
@@ -454,8 +431,9 @@ for n in np.arange(nFrames):
     else:
         interpbark = interpbark * (-1) * np.inf
 
-    # Create two constant exponentially decaying curves, ENVlow (fixed_low) and ENVhigh (fixed_high)
-    # Starting at position of f0max (Fcc)
+    # Create two constant exponentially decaying curves, ENVlow (fixed_low) and ENVhigh (fixed_high),
+    # starting at position of f0max (Fcc) and with slopes alpha_low and alpha_high, respectively.
+
     start_value = interpbark[int(np.floor(f0max))]
     fixed_low[0:int(np.floor(f0max)), n] = (-1) * np.inf
     fixed_high[0:int(np.floor(f0max)), n] = np.inf
@@ -466,7 +444,7 @@ for n in np.arange(nFrames):
 
     target_weights_timbre[:, n] = interpbark  # Assign weighting values.
 
-    fsynth = copy.copy(f)   # Create frequency vector (complex) where synthesized version will be saved.
+    fsynth = copy.copy(f)  # Create frequency vector (complex) where synthesized version will be saved.
 
     # Initialization
     shiftleft = np.zeros(num_harmonics)     # Bin shift left
@@ -474,9 +452,9 @@ for n in np.arange(nFrames):
     new_freq_bin = np.zeros(num_harmonics)  # Frequency bin for new harmonics
     sel_weight = np.zeros(num_harmonics)    # Selected weight for new harmonics
 
-    if f0found[n] != 0:                                         # If F0 has been found
-        fundamental_exact = detected_f0[f0found[n]-1, n]        # Exact value of fundamental
-        fundamental_bin = np.floor(fundamental_exact)           # Frequency bin where fundamental is located
+    if f0found[n] != 0:  # If f0 has been found
+        fundamental_exact = detected_f0[f0found[n] - 1, n]  # Exact value of fundamental
+        fundamental_bin = np.floor(fundamental_exact)       # Frequency bin where fundamental is located
 
         # Define limits of region of influence for the shifting.
         # So far it has been defined as a rectangular window of fixed size freq_window_size.
@@ -485,74 +463,90 @@ for n in np.arange(nFrames):
         #   - Different type of window?
 
         delta = np.floor(freq_window_size / 2)
-        left = int(fundamental_bin - delta)
-        right = int(fundamental_bin + delta + 1)
+        left = int(fundamental_bin - delta)         # Left extreme of the region of influence
+        right = int(fundamental_bin + delta + 1)    # Right extreme of the region of influence
 
-        region = f[left:right]  # Region of influence (ROI)
-        region_r = np.abs(region)  # Magnitude
-        region_phi = np.angle(region)  # Phase
+        region = f[left:right]          # Region of influence (ROI)
+        region_r = np.abs(region)       # Magnitude
+        region_phi = np.angle(region)   # Phase
 
         for nh in np.arange(num_harmonics):
-            beta = nh + 5 - f0found[n]  # Lo mismo que para definir el k
-            if detected_harmonics[nh, n] == 0:  # No harmonics where detected, so they will be generated
-                newfreq = beta * fundamental_exact  # Location of new harmonic
+            beta = nh + 5 - f0found[n]                  # Same criteria for defining k previously
+            if detected_harmonics[nh, n] == 0:          # No harmonics where detected, so they will be generated
+                newfreq = beta * fundamental_exact      # Exact location of new harmonic
                 binshift = newfreq - fundamental_exact  # How much shifting of the fundamental is necessary.
-                # binshift refers to a number of samples, but it is most likely not an integer number.
+
+                # binshift refers to a number of samples needed to move the f0 component (fundamental_exact)
+                # to the position of the required harmonic (newfreq), but it is most likely not an integer number.
+                # Given that we are working with frequency bins (integer numbers), this is a problem.
                 # This is the reason why we need to use a fractional delay filter, to interpolate magnitude
                 # values for the instants between the discrete sampled values.
 
-                shift = binshift * 2 * np.pi / nWin  # bin shift in Hz? rad/s?
+                shift = binshift * 2 * np.pi / nWin  # bin shift in rad/s?
 
                 # Fractional Delay Filter using a Lagrange Interpolator.
                 # The fractional delay filter is used for a more precise shifting of the frequency bins to the
                 # exact target frequency, due to the rounding errors on shifting FFT bins.
                 # TODO Not exactly the same as the filter used by Moliner, but close enough.
-                orderfracfilter = 4  # Order of the fractional delay filter
-                delay = binshift - np.floor(binshift)  # Delay in samples (non integer)
-                h_lagrange = lagrange(delay, orderfracfilter)
 
-                shiftleft[nh] = left + np.floor(binshift)  # Bin value for left extreme of the shifted region
-                shiftright[nh] = right + np.floor(binshift)  # Bin value for right extreme of the shifted region
+                orderfracfilter = 4                             # Order of the fractional delay filter
+                delay = binshift - np.floor(binshift)           # Delay in samples (non integer)
+                h_lagrange = lagrange(delay, orderfracfilter)   # Filter coefficients
+
+                shiftleft[nh] = left + np.floor(binshift)       # Bin value for left extreme of the shifted region
+                shiftright[nh] = right + np.floor(binshift)     # Bin value for right extreme of the shifted region
 
                 # Phase unwrapping
                 region_phi = np.unwrap(region_phi)  # Unwrap radian phase such that adjacent differences are never
                 # greater than pi by adding 2kpi for some integer k.
                 region_phi_pad = np.append(region_phi, np.zeros(int(orderfracfilter / 2)))  # Padding to compensate for
                 # delay generated by fractional delay filter.
-
-                region_phi_filtered = np.convolve(region_phi_pad, h_lagrange, 'same')
+                region_phi_filtered = np.convolve(region_phi_pad, h_lagrange, 'same')   # Filter with Lagrange interp.
                 region_phi_filtered = region_phi_filtered[int(orderfracfilter / 2):len(region_phi_filtered + 1)]
+                # Remove samples caused by delay.
+
+                # TODO revisar y entender bien esto
+                # DESDE ACÁ #
                 p0 = accum_phases[round(newfreq) - 1]  # Get accumulated phases for harmonic location
                 pu = p0 + Ra * shift  # Phase of next frame?
                 region_phi_x = region_phi_filtered + pu  # Accumulated phase is added to phase of filtered region (?)
                 accum_phases[int(shiftleft[nh]):int(shiftright[nh])] = np.ones(len(region)) * pu
+                # HASTA ACÁ #
 
                 timbre_weight = target_weights_timbre[round(newfreq), n]  # Get harmonic weighting values
-                new_freq_bin[nh] = round(newfreq)
-                sel_weight[nh] = timbre_weight
+                new_freq_bin[nh] = round(newfreq)                         # Harmonic bin
 
                 low_weight = fixed_low[round(newfreq), n]
                 high_weight = fixed_high[round(newfreq), n]
 
-                # If selected weight is not within low and high thresholds, adjust accordingly.
+                # If timbre weight is not within low and high thresholds, adjust accordingly.
                 if timbre_weight < low_weight:
                     sel_weight[nh] = low_weight
                 elif timbre_weight > high_weight:
                     sel_weight[nh] = high_weight
+                else:
+                    sel_weight[nh] = timbre_weight
 
                 if sel_weight[nh] > thresh_dB:
                     # Synthesis of harmonics is only applied if the selected weight is above the selected threshold
                     # for peak searching.
-                    region_r_2 = region_r * (10 ** ((sel_weight[nh] - detected_f0_values[f0found[n] - 1, n]) / 20))  # Apply gain with difference from selected weight and value of f0
+                    # Apply gain with difference from selected weight and magnitude of f0.
+                    region_r_2 = region_r * (10 ** ((sel_weight[nh] - detected_f0_values[f0found[n] - 1, n]) / 20))
+                    # Pad to compensate for the delay generated by the fractional delay filter.
                     region_r_pad = np.append(region_r_2, np.zeros(int(orderfracfilter / 2)))
+                    # Filter magnitude region with Fractional Delay Filter using a Lagrange Interpolator.
                     region_r_filt = np.convolve(region_r_pad, h_lagrange, 'same')
+                    # Keep interpolated values only.
                     region_r_filt = region_r_filt[int(orderfracfilter / 2):int(len(region_r_filt)) + 1]
 
                     start = int(shiftleft[nh])
                     end = int(shiftright[nh])
-                    r_fsynth = np.abs(fsynth[start:end]) + (region_r_filt - np.abs(
-                        fsynth[start:end])) * freq_window  # Magnitude for synthesized frequency response
-                    phi_fsynth = region_phi_x  # Phase for synthesized frequency response
+
+                    # Magnitude for synthesized frequency response
+                    r_fsynth = np.abs(fsynth[start:end]) + (region_r_filt - np.abs(fsynth[start:end])) * freq_window
+                    # Phase for synthesized frequency response
+                    phi_fsynth = region_phi_x
+                    # Calculate synthesized frequency response with Euler's form
                     fsynth[start:end] = r_fsynth * np.exp(1j * phi_fsynth)
 
                 # ESTO LO AGREGO SOLO PARA QUE FUNCIONE LO DEL a MÁS ABAJO. CHEQUEAR.
@@ -600,15 +594,15 @@ for n in np.arange(nFrames):
         a = []
         b = np.arange(len(f))
         for nh in np.arange(num_harmonics):
-            a = np.append(a, np.arange(start=int(shiftleft[nh]), stop=int(shiftright[nh])+1)).astype('int')
+            a = np.append(a, np.arange(start=int(shiftleft[nh]), stop=int(shiftright[nh]) + 1)).astype('int')
         b = np.delete(b, a)  # Remove indices where there are harmonics?
         for i in b:
             accum_phases[i] = 0  # Where there aren't synthesized harmonics, accumulated phase is set to 0.
 
     YL[:, n] = fsynth
 
-yL = istft(YL, Ra, win, win) * nWin  # ¿Por qué multiplica por nWin?
-#yL = istft(YL, Ra, win, win)
+yL = istft(YL, Ra, win, win) * nWin  # Multiply by nWin to compensate for line 357 ( f = Xs[:,n] / nWin )
+
 
 # End of tonal processing (PV) #
 
@@ -643,20 +637,22 @@ else:
 # Loudspeaker simulation filter
 N_lspk = 3000  # Filter order for loudspeaker simulation high-pass and low-pass filters
 
-x_filt, b = HPFlspk(x, N=N_lspk, Fc=Fcc, Fs=Fs)
-y_filt, b = HPFlspk(y, N=N_lspk, Fc=Fcc, Fs=Fs)
-y_filt_low, b = LPFlspk(y, N=N_lspk, Fc=Fcc, Fs=Fs)
+x_filt, b = HPFlspk(x, N=N_lspk, Fc=Fcc, Fs=Fs)         # Original signal, high pass filtered
+y_filt, b = HPFlspk(y, N=N_lspk, Fc=Fcc, Fs=Fs)         # VBS-processed signal, high pass filtered
+y_filt_low, b = LPFlspk(x, N=N_lspk, Fc=Fcc, Fs=Fs)     # Ogiinal signal, low pass filtered
 
 delay_end = int(delay + N1 / 2 + N_lspk / 2)  # N(LPF1) = N1 = 2000; N(HPFlspk) = N_lspk = 3000
-y_filt = y_filt[delay_end:-1]  # Final signal, filtered by loudspeaker simulation filter
+
+y_filt = y_filt[delay_end:-1]  # Final VBS-enhanced signal, filtered by loudspeaker simulation filter
+# (ESTA ES LA QUE NOS IMPORTA PARA LAS PRUEBAS!)
 
 delay_end_2 = int(N_lspk / 2)
 
-x_filt = x_filt[delay_end_2:len(y_filt) + delay_end_2]  # High-passed version
+x_filt = x_filt[delay_end_2:len(y_filt) + delay_end_2]  # High-passed version (Anchor)
 
 y_filt_low = y_filt_low[delay_end_2:len(y_filt) + delay_end_2]
 
-y_darre = y_filt_low + y_filt  # Resulting signal with low components
+y_darre = y_filt_low + y_filt  # Resulting signal with original low frequency components
 
 if len(x) > len(y_darre):
     x2 = x[0:len(y_darre)]  # Original signal with modified length
@@ -664,4 +660,4 @@ if len(x) > len(y_darre):
 # END #
 
 # Save output file #
-audioWrite('audios/piano_VBS_05_05_22_2.wav', y_VBS, Fs)
+#audioWrite('audios/piano_VBS_05_05_22_2.wav', y_filt, Fs)

@@ -9,14 +9,27 @@ from decomposeSTN import decomposeSTN
 from plots import plot_audio
 import matplotlib.pyplot as plt
 
-xt_reference, fs, path, duration, frames, channels = audioRead('audios/museval/metronome_78BPM.wav')
+# STIMULUS A
+# mix_A, fs, path, duration, frames, channels = audioRead('audios/museval/stimulusA.wav')
+# xt_reference_A, fs, path, duration, frames, channels = audioRead('audios/museval/metronome_78BPM.wav')
+# xs_reference_A, fs, path, duration, frames, channels = audioRead('audios/museval/pad.wav')
+#xt_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy/A_fuzzy_transient.wav')
+#xs_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy/A_fuzzy_tonal.wav')
+#xt_MCA, fs, path, duration, frames, channels = audioRead('audios/museval/MCA/A_MCA_transient.wav')
+#xs_MCA, fs, path, duration, frames, channels = audioRead('audios/museval/MCA/A_MCA_tonal.wav')
+#xt_MCA_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy_MCA/A_MCA_fuzzy_transient.wav')
+#xs_MCA_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy_MCA/A_MCA_fuzzy_tonal.wav')
+
+# STIMULUS B
+# mix_B, fs, path, duration, frames, channels = audioRead('audios/museval/stimulusB.wav')
+xt_reference, fs, path, duration, frames, channels = audioRead('audios/museval/metronome_78BPM_less_beats.wav')
 xs_reference, fs, path, duration, frames, channels = audioRead('audios/museval/pad.wav')
-xt_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy/metronome_pad_mix_44100Hz_2756_transient.wav')
-xs_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy/metronome_pad_mix_44100Hz_2756_tonal.wav')
-xt_MCA, fs, path, duration, frames, channels = audioRead('audios/museval/MCA/transient_museval.wav')
-xs_MCA, fs, path, duration, frames, channels = audioRead('audios/museval/MCA/tonal_museval.wav')
-xt_MCA_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy_MCA/transient_MCA_Fuzzy.wav')
-xs_MCA_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy_MCA/tonal_MCA_Fuzzy.wav')
+xt_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy/B_fuzzy_transient.wav')
+xs_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy/B_fuzzy_tonal.wav')
+xt_MCA, fs, path, duration, frames, channels = audioRead('audios/museval/MCA/B_MCA_transient.wav')
+xs_MCA, fs, path, duration, frames, channels = audioRead('audios/museval/MCA/B_MCA_tonal.wav')
+xt_MCA_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy_MCA/B_MCA_fuzzy_transient.wav')
+xs_MCA_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy_MCA/B_MCA_fuzzy_tonal.wav')
 
 # Zero padding to match shape of estimated sources and reference sources
 s_pad = len(xs_reference)-len(xs_fuzzy)
