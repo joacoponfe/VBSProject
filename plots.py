@@ -79,7 +79,7 @@ def plot_frame(X, m, fs, nWin, plot='mag'):
 #def plot_bin(X, k, fs, win, nWin, nHop, plot='mag'):
 
 
-def plot_audio(x, fs, title=''):
+def plot_audio(x, fs, title='', color='k', label=''):
     """Function to plot audio in the time domain.
     Inputs:
         x: audio data (array)
@@ -89,7 +89,7 @@ def plot_audio(x, fs, title=''):
     #plt.figure()
     t = np.linspace(0, len(x)/fs, len(x))
     plt.title(title)
-    plt.plot(t, x, 'k')
+    plt.plot(t, x, color=color,label=label)
     #plt.grid()
     plt.xlabel('Tiempo [s]')
     plt.ylabel('Amplitud')

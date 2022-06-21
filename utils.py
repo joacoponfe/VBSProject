@@ -4,7 +4,7 @@ from audioWrite import audioWrite
 from peakdetect import peakdetect
 from decomposeSTN import decomposeSTN
 import scipy.signal as ss
-from scipy.signal import freqz, remez
+from scipy.signal import freqz, remez, hilbert
 from scipy.signal.windows import hann
 import librosa as lib
 from stft import stft
@@ -83,6 +83,25 @@ def lagrange(delay, N):
     return h
 
 
+def envelope_matching(y_in, y_target):
+    """ Temporal envelope matching of signal.
+
+    Parameters
+    ----------
+    y_in: ndarray
+        Signal from which envelope is extracted.
+    y_target: ndarray
+        Signal to which envelope is applied.
+    Returns
+    -------
+    y_out: ndarray
+        Signal with temporal envelope matching applied.
+    """
+    # TODO check that dimensions match
+    envelope = np.abs(hilbert(y_in))
+    y_out = envelope * y_target
+
+    return y_out
 
 # #x, Fs, path, duration, frames, channels = audioRead('audios/classical_mono_ref.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/pluck.wav')
@@ -149,3 +168,44 @@ def lagrange(delay, N):
 # Faf, Fsf = FSfarras()  # 1st stage analysis and synthesis filters
 # af, sf = dualfilt1()  # Remaining stages anal. and synth. filters
 # x_coeffs, w_coeffs = dualtree1D(x_l, J, Faf, af)
+
+# ENVELOPE TESTS
+
+t = np.linspace(0, .2, 44100)  # 1 s, fs = 44100
+
+# Define carrier
+yc = np.sin(2*np.pi*1000*t)
+
+# Define envelope
+A = np.sin(2*np.pi*50*t)+1
+
+# Define function
+
+y = A*yc
+
+# Extract envelope
+env = np.abs(hilbert(y))
+
+# Test applying
+y2 = env*yc
+
+# Error
+error = (y2-y)
+mse = ((y2 - y)**2).mean(axis=0)
+print(mse)
+
+# Plot
+plt.figure()
+plt.subplot(3, 1, 1)
+plt.plot(t, yc)
+plt.xlim([0,.025])
+plt.subplot(3, 1, 2)
+plt.plot(t, y)
+plt.plot(t, env, color='g')
+plt.xlim([0,.025])
+plt.subplot(3, 1, 3)
+plt.plot(t, y2)
+plt.xlim([0, .025])
+plt.show()
+
+print('hola')

@@ -28,7 +28,7 @@ np.seterr(invalid='ignore')  # To ignore RuntimeWarnings
 # Load input audio
 # x, Fs, path, duration, frames, channels = audioRead('audios/music/classical_mono_ref.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/music/jazz_mono_ref.wav')
-# x, Fs, path, duration, frames, channels = audioRead('audios/music/pop_mono_ref.wav')
+x, Fs, path, duration, frames, channels = audioRead('audios/music/pop_mono_ref.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/music/rock_mono_ref.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/test/pluck.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/test/xilo.wav')
@@ -40,7 +40,7 @@ np.seterr(invalid='ignore')  # To ignore RuntimeWarnings
 # x, Fs, path, duration, frames, channels = audioRead('audios/museval/stimulusB.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/museval/MCA/B_MCA_tonal.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/museval/MCA/B_MCA_transient.wav')
-x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_1kHz_Amp_1.wav')
+# x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_1kHz_Amp_1.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_1kHz_Amp_0.8.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_1kHz_Amp_0.5.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_1kHz_Amp_0.3.wav')
