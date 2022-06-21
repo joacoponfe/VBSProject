@@ -38,9 +38,9 @@ np.seterr(invalid='ignore')  # To ignore RuntimeWarnings
 # x, Fs, path, duration, frames, channels = audioRead('audios/museval/MCA/tonal_museval.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/museval/MCA/transient_museval.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/museval/stimulusB.wav')
-x, Fs, path, duration, frames, channels = audioRead('audios/museval/MCA/B_MCA_tonal.wav')
+# x, Fs, path, duration, frames, channels = audioRead('audios/museval/MCA/B_MCA_tonal.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/museval/MCA/B_MCA_transient.wav')
-# x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_1kHz_Amp_1.wav')
+x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_1kHz_Amp_1.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_1kHz_Amp_0.8.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_1kHz_Amp_0.5.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_1kHz_Amp_0.3.wav')
@@ -84,16 +84,16 @@ x_lp, b_lp1 = LPF1(x, N=N1, Fc=Fc1, Fs=Fs)
 #############################################
 
 # Downsampling (hacerlo opcional)
-#Fs2 = 4096
-Fs2 = Fs
+Fs2 = 4096
+#Fs2 = Fs
 x_lp = resample(x_lp, Fs, Fs2, res_type='polyphase')
 # Polyphase filtering to match values from Matlab resample function.
 
 # Fuzzy separation (median filtering) based on Fitzgerald (2010).
 # STFT parameters
-nWin = 2756  # Window size (2756 para mantener la relación de 16 entre 4096/256 y 44100/2756)
+# nWin = 2756  # Window size (2756 para mantener la relación de 16 entre 4096/256 y 44100/2756)
 # nWin = 1024
-#nWin = 256
+nWin = 256
 Ra = 32  # Hop size
 noverlap = nWin - Ra  # Overlap size
 S = 1  # Time-Scale Modification Factor (TSM)
@@ -111,7 +111,7 @@ yfull = istft(X, Ra, win, win)
 # Para testear la separación
 # Tomamos desde la muestra nº nWin en adelante, para que se alineen los audios.
 #audioWrite('audios/museval/fuzzy_MCA/MCA_fuzzy_transient_stimulusB_2.wav', yt[nWin:], Fs2)
-audioWrite('audios/museval/fuzzy_MCA/MCA_fuzzy_tonal_stimulusB_2.wav', ys[nWin:], Fs2)
+#audioWrite('audios/museval/fuzzy_MCA/MCA_fuzzy_tonal_stimulusB_2.wav', ys[nWin:], Fs2)
 #audioWrite('audios/museval/fuzzy_MCA/fuzzy_noise_stimulusB.wav', yn[nWin:], Fs2)
 #audioWrite('audios/museval/fuzzy_MCA/full_MCA_Fuzzy.wav', yfull[nWin:], Fs2)
 #########################################################################
@@ -183,7 +183,7 @@ for n in np.arange(hN):
         yt_low_proc_2 = yt_low_proc_2 + h[n] * (yt_low_proc ** n)
 
 # Apply band pass filter (aplico solo uno, no dos como hace Moliner que en realidad es un LP y después un HP)
-# NBPF1 = 200
+# NBPFt = 200
 NBPF1 = 300
 # NBPF2 = 100
 yt_low_proc_bpf, b_bp = BPFt(yt_low_proc_2, N=NBPF1, Fs=Fs2)
@@ -580,7 +580,7 @@ for n in np.arange(nFrames):
                 else:
                     sel_weight[nh] = timbre_weight
 
-                # Synthesis of harmonics is only applied if the detected harmonic values are below the selected
+                # Enhancement of harmonics is only applied if the detected harmonic values are below the selected
                 # weight and if the selected weight is higher than the harmonic threshold detection level.
                 if detected_harmonics_values[nh, n] < sel_weight[nh] and sel_weight[nh] > thresh_dB:
                     harmonicregion_r_gain = harmonicregion_r * 10 ** (
