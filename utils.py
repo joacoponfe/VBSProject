@@ -83,12 +83,12 @@ def lagrange(delay, N):
     return h
 
 
-def envelope_matching(y_in, y_target):
+def envelope_matching(y_ref, y_target):
     """ Temporal envelope matching of signal.
 
     Parameters
     ----------
-    y_in: ndarray
+    y_ref: ndarray
         Signal from which envelope is extracted.
     y_target: ndarray
         Signal to which envelope is applied.
@@ -96,12 +96,44 @@ def envelope_matching(y_in, y_target):
     -------
     y_out: ndarray
         Signal with temporal envelope matching applied.
+    envelope: ndarray
+        Envelope of input signal.
     """
     # TODO check that dimensions match
-    envelope = np.abs(hilbert(y_in))
-    y_out = envelope * y_target
+    # IDEAS
+    # Hacerlo por ventanas temporales?
+    # Chequear qué número de puntos usar en la transformada Hilbert
 
-    return y_out
+    envelope_ref = np.abs(hilbert(y_ref))
+    envelope_target = np.abs(hilbert(y_target))
+
+    # MÉTODO 0 (MAL)
+    # y_out = envelope * y_target
+
+    # MÉTODO 1
+    #dB_envelope = 10 * np.log10(envelope_ref ** 2)
+    #dB_y_target = 10 * np.log10(y_target ** 2)
+    #dB_difference = dB_envelope - dB_y_target
+    #G = 10 ** (dB_difference / 20)
+
+    # MÉTODO 2 (es lo mismo que lo anterior, pero sin pasar a dB)
+    # G = abs(envelope_ref / y_target)
+
+    # MÉTODO 3 (calculando un G constante)
+    #env_mean = np.mean(envelope_ref)
+    #y_mean = np.mean(abs(y_target))
+    #G = env_mean / y_mean
+
+    # MÉTODO 4 (bueno)
+    G = envelope_ref / envelope_target
+
+    # Apply envelope to target signal
+    y_out = G * y_target
+
+    # Normalize
+    #y_out = y_out/max(abs(y_out))
+
+    return y_out, envelope_ref, envelope_target, G
 
 # #x, Fs, path, duration, frames, channels = audioRead('audios/classical_mono_ref.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/pluck.wav')
@@ -171,41 +203,41 @@ def envelope_matching(y_in, y_target):
 
 # ENVELOPE TESTS
 
-t = np.linspace(0, .2, 44100)  # 1 s, fs = 44100
+#t = np.linspace(0, .2, 44100)  # 1 s, fs = 44100
 
 # Define carrier
-yc = np.sin(2*np.pi*1000*t)
+#yc = np.sin(2*np.pi*1000*t)
 
 # Define envelope
-A = np.sin(2*np.pi*50*t)+1
+#A = np.sin(2*np.pi*50*t)+1
 
 # Define function
 
-y = A*yc
+#y = A*yc
 
 # Extract envelope
-env = np.abs(hilbert(y))
+#env = np.abs(hilbert(y))
 
 # Test applying
-y2 = env*yc
+#y2 = env*yc
 
 # Error
-error = (y2-y)
-mse = ((y2 - y)**2).mean(axis=0)
-print(mse)
+#error = (y2-y)
+#mse = ((y2 - y)**2).mean(axis=0)
+#print(mse)
 
 # Plot
-plt.figure()
-plt.subplot(3, 1, 1)
-plt.plot(t, yc)
-plt.xlim([0,.025])
-plt.subplot(3, 1, 2)
-plt.plot(t, y)
-plt.plot(t, env, color='g')
-plt.xlim([0,.025])
-plt.subplot(3, 1, 3)
-plt.plot(t, y2)
-plt.xlim([0, .025])
-plt.show()
+#plt.figure()
+#plt.subplot(3, 1, 1)
+#plt.plot(t, yc)
+#plt.xlim([0, .025])
+#plt.subplot(3, 1, 2)
+#plt.plot(t, y)
+#plt.plot(t, env, color='g')
+#plt.xlim([0, .025])
+#plt.subplot(3, 1, 3)
+#plt.plot(t, y2)
+#plt.xlim([0, .025])
+#plt.show()
 
-print('hola')
+#print('hola')

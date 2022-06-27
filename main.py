@@ -20,10 +20,16 @@ from melbank import compute_mat, hertz_to_bark, bark_to_hertz
 import copy
 from plots import plot_response, plot_spectrogram, plot_audio, plot_harmonics, plot_frame
 from NLD import NLD
-from test import fracdelay, lagrange
+from utils import fracdelay, lagrange, envelope_matching
+from datetime import date
+from os.path import basename
+import time
 
 # Other settings
 np.seterr(invalid='ignore')  # To ignore RuntimeWarnings
+
+# Start timer
+tic = time.time()
 
 # Load input audio
 # x, Fs, path, duration, frames, channels = audioRead('audios/music/classical_mono_ref.wav')
@@ -40,11 +46,10 @@ x, Fs, path, duration, frames, channels = audioRead('audios/music/pop_mono_ref.w
 # x, Fs, path, duration, frames, channels = audioRead('audios/museval/stimulusB.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/museval/MCA/B_MCA_tonal.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/museval/MCA/B_MCA_transient.wav')
-# x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_1kHz_Amp_1.wav')
-# x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_1kHz_Amp_0.8.wav')
-# x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_1kHz_Amp_0.5.wav')
-# x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_1kHz_Amp_0.3.wav')
-
+# x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_100Hz_Amp_1.wav')
+# x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_100Hz_Amp_0.8.wav')
+# x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_100Hz_Amp_0.5.wav')
+# x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_100Hz_Amp_0.3.wav')
 
 # Stereo to mono conversion
 x = x.transpose()
@@ -182,18 +187,30 @@ for n in np.arange(hN):
     else:
         yt_low_proc_2 = yt_low_proc_2 + h[n] * (yt_low_proc ** n)
 
+# Create highly distorted signal (Anchor 1 for Audio Quality test)
+# First, we're using one of the NOT RECOMMENDED NLDs
+h = H_CLP
+hN = len(h)
+for n in np.arange(hN):
+    if n == 0:
+        y_dist = h[n]
+    else:
+        y_dist = y_dist + h[n] * (yt_low_proc ** n)
+
 # Apply band pass filter (aplico solo uno, no dos como hace Moliner que en realidad es un LP y después un HP)
 # NBPFt = 200
 NBPF1 = 300
 # NBPF2 = 100
 yt_low_proc_bpf, b_bp = BPFt(yt_low_proc_2, N=NBPF1, Fs=Fs2)
 
-# PLOT RESPONSE OF BPF
+################################################################
+# PLOT RESPONSE OF BPF FOR TRANSIENT CONTENT
 # w_bp, h_bp = freqz(b_bp, [1.0])
 # plot_response(Fs2, w_bp, h_bp, "BPF for Transient Content")
 # plt.show()
 # END PLOT RESPONSE #
 # yt_low_proc_bpf = BPFt2(yt_low_proc_bpf, N=NBPF2, Fs=Fs2)
+################################################################
 
 # Delay adjustment
 # delay_low = np.round((NBPF1+NBPF2)/2)
@@ -256,10 +273,20 @@ difference_rs = difference_rs[0:len(yt_low_proc_bpf)]
 G = 10 ** (difference_rs / 20)
 yt_low_proc_gain = G * yt_low_proc_bpf
 
-# Reconstruction
-yt_proc = yt_hp + yt_low_proc_gain  # Adding high-pass filtered and processed low-passed signals together
+# Temporal envelope matching
+yt_lp_delay = np.concatenate((np.zeros(delay_low), yt_lp))  # Add delay caused by BFPt to low-passed signal
+if len(yt_lp_delay) > len(yt_low_proc_gain):
+    yt_lp_delay = yt_lp_delay[0:len(yt_low_proc_gain)]
+else:
+    yt_low_proc_gain = yt_low_proc_gain[0:len(yt_lp_delay)]
 
-delay_transients = Nt / 2 + delay_low  # Delay for transient signal: N(LPFt)/2 + N(BPF)/2
+# Calculate envelope of yt_lp signal and apply it to yt_low_proc_gain
+yt_low_proc_gain_matched, envelope_ref, envelope_target, gain = envelope_matching(yt_lp_delay, yt_low_proc_gain)
+
+# Reconstruction
+yt_proc = yt_hp + yt_low_proc_gain_matched  # Adding high-pass filtered and processed low-passed signals together
+
+delay_transients = Nt / 2 + delay_low  # Delay for transient signal: N(LPFt)/2 + N(BPFt)/2
 
 # End of transient processing with NLD #
 
@@ -601,25 +628,24 @@ for n in np.arange(nFrames):
 
     YL[:, n] = fsynth
 
-yL = istft(YL, Ra, win, win) * nWin  # Multiply by nWin to compensate for line 357 ( f = Xs[:,n] / nWin )
-
+ys_proc = istft(YL, Ra, win, win) * nWin  # Multiply by nWin to compensate for line 357 ( f = Xs[:,n] / nWin )
 
 # End of tonal processing (PV) #
 
 # Tonal and transient reconstruction #
 
-yL = np.concatenate((np.zeros(int(delay_transients)), yL))  # Add delay caused by transient processing to tonal signal
+ys_proc = np.concatenate((np.zeros(int(delay_transients)), ys_proc))  # Add delay caused by transient processing to tonal signal
 yn = np.concatenate((np.zeros(int(delay_transients)), yn))  # Add delay caused by transient processing to noise signal
-lengths = [len(yL), len(yn), len(yt_proc)]
-min_length = np.min(lengths)  # Minimum length of tonal, noise and transient signals
+lengths = [len(ys_proc), len(yn), len(yt_proc)]
+min_length = np.min(lengths)  # Find minimum length among length of tonal, noise and transient signals
 
 # Make all signals the same length
-yL = yL[0:min_length]
+ys_proc = ys_proc[0:min_length]
 yn = yn[0:min_length]
 yt_proc = yt_proc[0:min_length]
 
 # Add processed tonal, transient and noise signals
-y_VBS = yL + yn + yt_proc
+y_VBS = ys_proc + yt_proc + yn
 
 # Resample to original sample rate
 y_VBS = resample(y_VBS, Fs2, Fs)
@@ -637,27 +663,57 @@ else:
 # Loudspeaker simulation filter
 N_lspk = 3000  # Filter order for loudspeaker simulation high-pass and low-pass filters
 
-x_filt, b = HPFlspk(x, N=N_lspk, Fc=Fcc, Fs=Fs)         # Original signal, high pass filtered
+x_filt, b = HPFlspk(x, N=N_lspk, Fc=500, Fs=Fs)         # Original signal, high pass filtered (Fc = 500) para que sea más obvia la falta de graves
+# x_filt, b = HPFlspk(x, N=N_lspk, Fc=Fcc, Fs=Fs)         # Original signal, high pass filtered (Fc = Fcc)
 y_filt, b = HPFlspk(y, N=N_lspk, Fc=Fcc, Fs=Fs)         # VBS-processed signal, high pass filtered
-y_filt_low, b = LPFlspk(x, N=N_lspk, Fc=Fcc, Fs=Fs)     # Ogiinal signal, low pass filtered
+y_filt_low, b = LPFlspk(x, N=N_lspk, Fc=Fcc, Fs=Fs)     # Original signal, low pass filtered
 
-delay_end = int(delay + N1 / 2 + N_lspk / 2)  # N(LPF1) = N1 = 2000; N(HPFlspk) = N_lspk = 3000
+# Calculate delay for final VBS processed signal, which consists of three separate delays:
+# 1st, the delay caused by the tonal and transient processing: delay
+# 2nd, the delay caused by the first low pass filter: N(LPF1) = N1
+# 3rd, the delay caused by the loudspeaker simulation filter: N(HPFlspk) = N_lspk
+delay_end = int(delay + N1 / 2 + N_lspk / 2)
 
 y_filt = y_filt[delay_end:-1]  # Final VBS-enhanced signal, filtered by loudspeaker simulation filter
-# (ESTA ES LA QUE NOS IMPORTA PARA LAS PRUEBAS!)
 
+# Calculate delay for original signals (only considering the delay caused by the loudspeaker simulation filter)
 delay_end_2 = int(N_lspk / 2)
 
-x_filt = x_filt[delay_end_2:len(y_filt) + delay_end_2]  # High-passed version (Anchor)
+x_filt = x_filt[delay_end_2:len(y_filt) + delay_end_2]  # High-passed version (Anchor for Bass Intensity test)
 
 y_filt_low = y_filt_low[delay_end_2:len(y_filt) + delay_end_2]
 
 y_darre = y_filt_low + y_filt  # Resulting signal with original low frequency components
 
 if len(x) > len(y_darre):
-    x2 = x[0:len(y_darre)]  # Original signal with modified length
+    x_ref = x[0:len(y_darre)]  # Original signal with modified length
+else:
+    x_ref = x
+
+# Adjust length of Anchor 1 signal and resample
+# Ideas para la Anchor 1:
+# - ENVELOPE MATCHING MALO: que produzca recorte de la señal
+# - NLD FUNCTION que cause intermodulation distortion (IMD)
+#y_dist = y_dist[0:min_length]
+#y_dist = resample(y_dist, Fs2, Fs)
+#y_dist = y_dist[0:len(y_darre)]
+
 
 # END #
 
-# Save output file #
-#audioWrite('audios/piano_VBS_05_05_22_2.wav', y_filt, Fs)
+# Save output files #
+today = date.today()
+name = basename(path)[:-4]  # Get basename of audio file without extension (will be used when saving output files)
+
+audioWrite(f'audios/processed/{name}_original_{today}.wav', x_ref, Fs)      # Reference signal
+audioWrite(f'audios/processed/{name}_VBS_{today}.wav', y_filt, Fs)          # VBS enhanced signal
+# audioWrite(f'audios/processed/{name}_Anchor1_{today}.wav', y_dist, Fs)      # Anchor 1 for Audio Quality test
+audioWrite(f'audios/processed/{name}_Anchor2_{today}.wav', x_filt, Fs)      # Anchor 2 for Bass Intensity test
+
+
+# Stop timer and calculate elapsed time
+toc = time.time()
+elapsed = toc - tic
+print(f'Process finished after {round(elapsed,2)} seconds.')
+
+
