@@ -18,7 +18,7 @@ from pydsm import audio_weightings
 from weightingFilters import A_weight
 from melbank import compute_mat, hertz_to_bark, bark_to_hertz
 import copy
-from plots import plot_response, plot_spectrogram, plot_audio, plot_harmonics, plot_frame
+from plots import plot_response, plot_spectrogram, plot_audio, plot_harmonics, plot_frame, plot_TEM
 from NLD import NLD
 from utils import fracdelay, lagrange, envelope_matching
 from datetime import date
@@ -30,6 +30,7 @@ np.seterr(invalid='ignore')  # To ignore RuntimeWarnings
 
 # Start timer
 tic = time.time()
+
 
 # Load input audio
 # x, Fs, path, duration, frames, channels = audioRead('audios/music/classical_mono_ref.wav')
@@ -43,6 +44,7 @@ x, Fs, path, duration, frames, channels = audioRead('audios/music/pop_mono_ref.w
 # x, Fs, path, duration, frames, channels = audioRead('audios/museval/metronome_pad_mix.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/museval/MCA/tonal_museval.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/museval/MCA/transient_museval.wav')
+# x, Fs, path, duration, frames, channels = audioRead('audios/museval/stimulusA.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/museval/stimulusB.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/museval/MCA/B_MCA_tonal.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/museval/MCA/B_MCA_transient.wav')
@@ -50,6 +52,12 @@ x, Fs, path, duration, frames, channels = audioRead('audios/music/pop_mono_ref.w
 # x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_100Hz_Amp_0.8.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_100Hz_Amp_0.5.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/NLD_tests/tone_100Hz_Amp_0.3.wav')
+# x, Fs, path, duration, frames, channels = audioRead('PQevalAudio-v1r0/PQevalAudio/audios_48k/AlJames_mix.wav')
+# x, Fs, path, duration, frames, channels = audioRead('PQevalAudio-v1r0/PQevalAudio/audios_48k/HeladoNegro_mix.wav')
+# x, Fs, path, duration, frames, channels = audioRead('PQevalAudio-v1r0/PQevalAudio/audios_48k/AimeeNorwich_mix.wav')
+# x, Fs, path, duration, frames, channels = audioRead('PQevalAudio-v1r0/PQevalAudio/audios_48k/HeladoNegro_drums.wav')
+
+name = basename(path)[:-4]  # Get basename of audio file without extension (will be used when saving output files)
 
 # Stereo to mono conversion
 x = x.transpose()
@@ -65,7 +73,19 @@ inharmonicity_tolerance = 0.05  # Tolerance parameter (tau) for harmonic detecti
 alpha_low = 7  # Lower weighting limit in dB/oct
 alpha_high = 2  # Upper weighting limit in dB/oct
 freq_window_Hz = 55  # Size of the frequency window for harmonic enhancement [Hz]
+#freq_window_Hz = 100
+#freq_window_Hz = 60
 extra_harmonic_gain = 3  # Extra harmonic gain for tonal calibration
+sep_method = 'Median'  # Select component separation method ('MCA' or 'Median')
+
+# STFT parameters
+# nWin = 2756  # Window size (2756 para mantener la relación de 16 entre 4096/256 y 44100/2756)
+# nWin = 1024
+nWin = 256
+nHop = 32  # Hop size
+noverlap = nWin - nHop  # Overlap size
+S = 1  # Time-Scale Modification Factor (TSM)
+win = hann(nWin)
 
 # Splitting and resampling
 
@@ -90,32 +110,42 @@ x_lp, b_lp1 = LPF1(x, N=N1, Fc=Fc1, Fs=Fs)
 
 # Downsampling (hacerlo opcional)
 Fs2 = 4096
-#Fs2 = Fs
+# Fs2 = Fs
 x_lp = resample(x_lp, Fs, Fs2, res_type='polyphase')
 # Polyphase filtering to match values from Matlab resample function.
 
-# Fuzzy separation (median filtering) based on Fitzgerald (2010).
-# STFT parameters
-# nWin = 2756  # Window size (2756 para mantener la relación de 16 entre 4096/256 y 44100/2756)
-# nWin = 1024
-nWin = 256
-Ra = 32  # Hop size
-noverlap = nWin - Ra  # Overlap size
-S = 1  # Time-Scale Modification Factor (TSM)
-win = hann(nWin)
-
-X, Xs, Xt, Xn, Rs, Rt, Rn = decomposeSTN(x_lp, S, nWin, Ra, Fs2)
-
-# ISTFT
-yt = istft(Xt, Ra, win, win)
-yn = istft(Xn, Ra, win, win)
-ys = istft(Xs, Ra, win, win)
-yfull = istft(X, Ra, win, win)
+if sep_method == 'Median':  # Median filtering method (Fuzzy) based on Fitzgerald (2010).
+    X, Xs, Xt, Xn, Rs, Rt, Rn = decomposeSTN(x_lp, S, nWin, nHop, Fs2)
+    # ISTFT
+    yt = istft(Xt, nHop, win, win)
+    yn = istft(Xn, nHop, win, win)
+    ys = istft(Xs, nHop, win, win)
+    yfull = istft(X, nHop, win, win)
+elif sep_method == 'MCA':  # MCA
+    # Save low-passed and downsampled audio for MCA processing externally
+    # audioWrite(f'MCA/{name}_lp_4096.wav', x_lp, Fs2)
+    # Load separated audios (MCA outputs)
+    yt = audioRead(f'MCA/{name}_lp_4096_MCA_transient_bior6.8.wav')[0]  # Transient
+    ys = audioRead(f'MCA/{name}_lp_4096_MCA_tonal_bior6.8.wav')[0]  # Tonal
+    # Calculate STFT of tonal signal for PV
+    Xs, T = stft(ys, win, nHop, nWin)
 
 #########################################################################
 # Para testear la separación
-# Tomamos desde la muestra nº nWin en adelante, para que se alineen los audios.
-#audioWrite('audios/museval/fuzzy_MCA/MCA_fuzzy_transient_stimulusB_2.wav', yt[nWin:], Fs2)
+if sep_method == 'Median':
+    # Tomamos desde la muestra nº nWin en adelante, para que se alineen los audios.
+    # Después, rellenamos con ceros para que tengan igual longitud que x_lp.
+    ys_out = ys[nWin:]
+    ys_out = np.concatenate((ys_out, np.zeros(len(x_lp) - len(ys_out))))
+    yt_out = yt[nWin:]
+    yt_out = np.concatenate((yt_out, np.zeros(len(x_lp) - len(yt_out))))
+    yfull_out = yfull[nWin:]
+    yfull_out = np.concatenate((yfull_out, np.zeros(len(x_lp)-len(yfull_out))))
+
+# Write output files
+audioWrite(f'audios/{name}_{sep_method}_tonal.wav', ys_out, Fs2)
+audioWrite(f'audios/{name}_{sep_method}_transient.wav', yt_out, Fs2)
+#audioWrite(f'audios/{name}_{sep_method}_full.wav', yfull_out, Fs2)
 #audioWrite('audios/museval/fuzzy_MCA/MCA_fuzzy_tonal_stimulusB_2.wav', ys[nWin:], Fs2)
 #audioWrite('audios/museval/fuzzy_MCA/fuzzy_noise_stimulusB.wav', yn[nWin:], Fs2)
 #audioWrite('audios/museval/fuzzy_MCA/full_MCA_Fuzzy.wav', yfull[nWin:], Fs2)
@@ -272,6 +302,7 @@ difference_rs = difference_rs[0:len(yt_low_proc_bpf)]
 # Revisar esto, no está aplicando tanta ganancia como el código de Moliner de Matlab
 G = 10 ** (difference_rs / 20)
 yt_low_proc_gain = G * yt_low_proc_bpf
+#yt_low_proc_gain = yt_low_proc_bpf # Uncomment to bypass old gain method (to see whether TEM works better on its own)
 
 # Temporal envelope matching
 yt_lp_delay = np.concatenate((np.zeros(delay_low), yt_lp))  # Add delay caused by BFPt to low-passed signal
@@ -285,6 +316,7 @@ yt_low_proc_gain_matched, envelope_ref, envelope_target, gain = envelope_matchin
 
 # Reconstruction
 yt_proc = yt_hp + yt_low_proc_gain_matched  # Adding high-pass filtered and processed low-passed signals together
+# yt_proc = yt_hp + yt_low_proc_gain  # Uncomment to bypass Temporal Envelope Matching
 
 delay_transients = Nt / 2 + delay_low  # Delay for transient signal: N(LPFt)/2 + N(BPFt)/2
 
@@ -297,7 +329,7 @@ delay_transients = Nt / 2 + delay_low  # Delay for transient signal: N(LPFt)/2 +
 # Harmonic detection variables
 
 # Initialization
-nBins, nFrames = np.shape(X)
+nBins, nFrames = np.shape(Xs)
 
 f0found = np.zeros(nFrames).astype('int')  # Which region f0 is found, ranges from 0 to 3.
 # 0: not in any region; 1: first region, 2: second region, 3: third region.
@@ -535,7 +567,7 @@ for n in np.arange(nFrames):
                 # TODO revisar y entender bien esto
                 # DESDE ACÁ #
                 p0 = accum_phases[round(newfreq) - 1]  # Get accumulated phases for harmonic location
-                pu = p0 + Ra * shift  # Phase of next frame?
+                pu = p0 + nHop * shift  # Phase of next frame?
                 region_phi_x = region_phi_filtered + pu  # Accumulated phase is added to phase of filtered region (?)
                 accum_phases[int(shiftleft[nh]):int(shiftright[nh])] = np.ones(len(region)) * pu
                 # HASTA ACÁ #
@@ -628,24 +660,45 @@ for n in np.arange(nFrames):
 
     YL[:, n] = fsynth
 
-ys_proc = istft(YL, Ra, win, win) * nWin  # Multiply by nWin to compensate for line 357 ( f = Xs[:,n] / nWin )
+ys_proc = istft(YL, nHop, win, win) * nWin  # Multiply by nWin to compensate for line 357 ( f = Xs[:,n] / nWin )
 
 # End of tonal processing (PV) #
 
 # Tonal and transient reconstruction #
+ys_proc = np.concatenate(
+    (np.zeros(int(delay_transients)), ys_proc))  # Add delay caused by transient processing to tonal signal
 
-ys_proc = np.concatenate((np.zeros(int(delay_transients)), ys_proc))  # Add delay caused by transient processing to tonal signal
-yn = np.concatenate((np.zeros(int(delay_transients)), yn))  # Add delay caused by transient processing to noise signal
-lengths = [len(ys_proc), len(yn), len(yt_proc)]
-min_length = np.min(lengths)  # Find minimum length among length of tonal, noise and transient signals
+# If separation method is Median Filtering, process noise signal; otherwise (MCA), ignore.
+if sep_method == 'Median':
+    yn = np.concatenate(
+        (np.zeros(int(delay_transients)), yn))  # Add delay caused by transient processing to noise signal
 
-# Make all signals the same length
-ys_proc = ys_proc[0:min_length]
-yn = yn[0:min_length]
-yt_proc = yt_proc[0:min_length]
+    lengths = [len(ys_proc), len(yn), len(yt_proc)]
+    min_length = np.min(lengths)  # Find minimum length among length of tonal, noise and transient signals
 
-# Add processed tonal, transient and noise signals
-y_VBS = ys_proc + yt_proc + yn
+    # Make all signals the same length
+    ys_proc = ys_proc[0:min_length]
+    yt_proc = yt_proc[0:min_length]
+    yn = yn[0:min_length]
+
+    # Add processed tonal, transient and noise signals
+    y_VBS = ys_proc + yt_proc + yn
+
+elif sep_method == 'MCA':
+    # Add delay to transient signal caused by STFT of tonal signal.
+    # This is because in MCA no STFT is performed on the transient signal,
+    # and therefore there is no nWin delay as in the case of Median Filter separation.
+    yt_proc = np.concatenate((np.zeros(nWin), yt_proc))
+
+    lengths = [len(ys_proc), len(yt_proc)]
+    min_length = np.min(lengths)  # Find minimum length among length of tonal and transient signals
+
+    # Make all signals the same length
+    ys_proc = ys_proc[0:min_length]
+    yt_proc = yt_proc[0:min_length]
+
+    # Add processed tonal and transient signals
+    y_VBS = ys_proc + yt_proc
 
 # Resample to original sample rate
 y_VBS = resample(y_VBS, Fs2, Fs)
@@ -653,6 +706,15 @@ y_VBS = resample(y_VBS, Fs2, Fs)
 # Apply delay to HPF input
 delay = np.ceil(nWin * Fs / Fs2 + delay_transients * Fs / Fs2).astype('int')
 x_hp = np.concatenate((np.zeros(delay), x_hp))
+
+# NO LONGER NEEDED - THIS DELAY IS APPLIED A FEW LINES ABOVE TO THE yt_proc IF SEP METHOD IS MCA
+# If separation method is MCA, apply a delay to the y_VBS signal
+# This is because of the delay due to nWin which happens in the STFT and ISTFT stages
+# of the median filter based separation process.
+#if sep_method == 'MCA':
+#    delay_MCA = np.ceil(nWin * Fs / Fs2).astype('int')
+#    y_VBS = np.concatenate((np.zeros(delay_MCA), y_VBS))
+#################################################################################################
 
 # Construct output signal by adding VBS-processed and high-pass filtered inputs.
 if len(x_hp) > len(y_VBS):
@@ -672,6 +734,7 @@ y_filt_low, b = LPFlspk(x, N=N_lspk, Fc=Fcc, Fs=Fs)     # Original signal, low p
 # 1st, the delay caused by the tonal and transient processing: delay
 # 2nd, the delay caused by the first low pass filter: N(LPF1) = N1
 # 3rd, the delay caused by the loudspeaker simulation filter: N(HPFlspk) = N_lspk
+
 delay_end = int(delay + N1 / 2 + N_lspk / 2)
 
 y_filt = y_filt[delay_end:-1]  # Final VBS-enhanced signal, filtered by loudspeaker simulation filter
@@ -703,13 +766,11 @@ else:
 
 # Save output files #
 today = date.today()
-name = basename(path)[:-4]  # Get basename of audio file without extension (will be used when saving output files)
 
-audioWrite(f'audios/processed/{name}_original_{today}.wav', x_ref, Fs)      # Reference signal
-audioWrite(f'audios/processed/{name}_VBS_{today}.wav', y_filt, Fs)          # VBS enhanced signal
-# audioWrite(f'audios/processed/{name}_Anchor1_{today}.wav', y_dist, Fs)      # Anchor 1 for Audio Quality test
-audioWrite(f'audios/processed/{name}_Anchor2_{today}.wav', x_filt, Fs)      # Anchor 2 for Bass Intensity test
-
+audioWrite(f'audios/processed/{name}_original_{sep_method}_{today}.wav', x_ref, Fs)      # Reference signal
+audioWrite(f'audios/processed/{name}_VBS_{sep_method}_{today}.wav', y_filt, Fs)          # VBS enhanced signal
+# audioWrite(f'audios/processed/{name}_Anchor1_{sep_method}_{today}.wav', y_dist, Fs)      # Anchor 1 for Audio Quality test
+audioWrite(f'audios/processed/{name}_Anchor2_{sep_method}_{today}.wav', x_filt, Fs)      # Anchor 2 for Bass Intensity test
 
 # Stop timer and calculate elapsed time
 toc = time.time()

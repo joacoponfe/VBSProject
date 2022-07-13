@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import spectrogram
 from scipy.fft import fft, fftfreq, rfft, rfftfreq
+import pywt
 plt.rcParams["font.family"] = "Calibri"
 
 
@@ -92,6 +93,43 @@ def plot_audio(x, fs, title='', color='k', label='', linestyle='-', linewidth=0.
     plt.ylabel('Amplitud')
     plt.show()
 
+
+def get_wavelet(wavelet, level=5):
+    w = pywt.Wavelet(wavelet)
+    if wavelet not in ['bior6.8', 'rbio6.8']:
+        [phi, psi, x] = w.wavefun(level=level)
+    else:
+        [phi, psi, phi_r, psi_r, x] = w.wavefun(level=level)
+    return phi, psi, x
+
+
+def plot_wavelets(wavelets):
+    plt.figure()
+    i = 1
+    num = len(wavelets)
+    for wavelet in wavelets:
+        phi, psi, x = get_wavelet(wavelet)
+        plt.subplot(int(num/2), int(num/3), i)
+        plt.plot(x, psi, 'k')
+        plt.title(wavelet)
+        i += 1
+    plt.tight_layout()
+
+
+def plot_TEM(yt_lp_delay, yt_low_proc_gain, yt_low_proc_gain_matched, envelope_ref, Fs, xlim):
+    """ Function for plotting result of temporal envelope matching in NLD (pre and post)."""
+    plt.subplot(3, 1, 1)
+    plot_audio(yt_lp_delay, Fs, 'yt_lp_delay')
+    plot_audio(envelope_ref, Fs, color='b', linestyle='--')
+    plt.xlim(xlim)
+    plt.subplot(3, 1, 2)
+    plot_audio(yt_low_proc_gain, Fs, 'yt_low_proc_gain')
+    plot_audio(envelope_ref, Fs, color='b', linestyle='--')
+    plt.xlim(xlim)
+    plt.subplot(3, 1, 3)
+    plot_audio(yt_low_proc_gain_matched, Fs, 'yt_low_proc_gain_matched')
+    plot_audio(envelope_ref, Fs, color='b', linestyle='--')
+    plt.xlim(xlim)
 
 #def plot_F0detection(r, )
 #    """Plots spectrogram of specific frame, peaks detected, borders delimited by f0min and f0max,
