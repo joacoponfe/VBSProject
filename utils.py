@@ -12,6 +12,7 @@ from istft import istft
 import matplotlib.pyplot as plt
 import IPython.display as ipd
 from pydsm import audio_weightings
+import pywt
 
 
 def plot_response(fs, w, h, title):
@@ -83,7 +84,7 @@ def lagrange(delay, N):
     return h
 
 
-def envelope_matching(y_ref, y_target):
+def envelope_matching(y_ref, y_target, method):
     """ Temporal envelope matching of signal.
 
     Parameters
@@ -92,6 +93,8 @@ def envelope_matching(y_ref, y_target):
         Signal from which envelope is extracted.
     y_target: ndarray
         Signal to which envelope is applied.
+    method: 1, 2, 3, 4
+        Which method to apply. Methods 1 - 3 are wrong, 4 is correct.
     Returns
     -------
     y_out: ndarray
@@ -107,25 +110,23 @@ def envelope_matching(y_ref, y_target):
     envelope_ref = np.abs(hilbert(y_ref))
     envelope_target = np.abs(hilbert(y_target))
 
-    # MÉTODO 0 (MAL)
-    # y_out = envelope * y_target
-
-    # MÉTODO 1
-    #dB_envelope = 10 * np.log10(envelope_ref ** 2)
-    #dB_y_target = 10 * np.log10(y_target ** 2)
-    #dB_difference = dB_envelope - dB_y_target
-    #G = 10 ** (dB_difference / 20)
-
-    # MÉTODO 2 (es lo mismo que lo anterior, pero sin pasar a dB)
-    # G = abs(envelope_ref / y_target)
-
-    # MÉTODO 3 (calculando un G constante)
-    #env_mean = np.mean(envelope_ref)
-    #y_mean = np.mean(abs(y_target))
-    #G = env_mean / y_mean
-
-    # MÉTODO 4 (bueno)
-    G = envelope_ref / envelope_target
+    if method == 1:
+        # MÉTODO 1
+        dB_envelope = 10 * np.log10(envelope_ref ** 2)
+        dB_y_target = 10 * np.log10(y_target ** 2)
+        dB_difference = dB_envelope - dB_y_target
+        G = 10 ** (dB_difference / 20)
+    elif method == 2:
+        # MÉTODO 2 (es lo mismo que lo anterior, pero sin pasar a dB)
+        G = abs(envelope_ref / y_target)
+    elif method == 3:
+        # MÉTODO 3 (calculando un G constante, idea de Guille)
+        env_mean = np.mean(envelope_ref)
+        y_mean = np.mean(abs(y_target))
+        G = env_mean / y_mean
+    elif method == 4:
+        # MÉTODO 4 (bueno)
+        G = envelope_ref / envelope_target
 
     # Apply envelope to target signal
     y_out = G * y_target
@@ -134,6 +135,16 @@ def envelope_matching(y_ref, y_target):
     #y_out = y_out/max(abs(y_out))
 
     return y_out, envelope_ref, envelope_target, G
+
+
+def get_wavelet(wavelet, level=5):
+    w = pywt.Wavelet(wavelet)
+    if wavelet not in ['bior6.8', 'rbio6.8']:
+        [phi, psi, x] = w.wavefun(level=level)
+    else:
+        [phi, psi, phi_r, psi_r, x] = w.wavefun(level=level)
+    return phi, psi, x
+
 
 # #x, Fs, path, duration, frames, channels = audioRead('audios/classical_mono_ref.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/pluck.wav')

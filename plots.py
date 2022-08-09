@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import spectrogram
 from scipy.fft import fft, fftfreq, rfft, rfftfreq
+from utils import get_wavelet
 import pywt
 plt.rcParams["font.family"] = "Calibri"
 
@@ -92,15 +93,6 @@ def plot_audio(x, fs, title='', color='k', label='', linestyle='-', linewidth=0.
     plt.xlabel('Tiempo [s]')
     plt.ylabel('Amplitud')
     plt.show()
-
-
-def get_wavelet(wavelet, level=5):
-    w = pywt.Wavelet(wavelet)
-    if wavelet not in ['bior6.8', 'rbio6.8']:
-        [phi, psi, x] = w.wavefun(level=level)
-    else:
-        [phi, psi, phi_r, psi_r, x] = w.wavefun(level=level)
-    return phi, psi, x
 
 
 def plot_wavelets(wavelets):

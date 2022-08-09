@@ -21,9 +21,10 @@ eng.addpath(PEASS, nargout=0)
 #ref = 'PQevalAudio-v1r0/PQevalAudio/audios_48k/AimeeNorwich_drums_lp_4096.wav'
 #test = 'PQevalAudio-v1r0/PQevalAudio/audios_48k/AimeeNorwich_mix_lp_4096_MCA_transient_bior6.8.wav'
 
-# TEM TESTS (reference is the target signal before NLD processing; test is the signal after NLD + Envelope Matching)
+# Temporal Envelope Matching Tests
+# (reference is the target signal before NLD processing; test is the signal after NLD + Envelope Matching)
 ref = 'audios/TEM_tests/audios_48k/rock_Median_Transient_LP_4096_Target.wav'
-test = 'audios/TEM_tests/audios_48k/rock_Median_Transient_LP_4096_Matched.wav'
+test = 'audios/TEM_tests/audios_48k/rock_Median_Transient_LP_4096_Target.wav'
 
 # Calculate PEAQ metrics
 PEAQ_res = eng.PQevalAudio(ref, test)
