@@ -4,11 +4,20 @@ from audioRead import audioRead
 import musdb
 import museval
 import pandas as pd
+import soundfile as sf
 from scipy.signal.windows import hann
 from decomposeSTN import decomposeSTN
 from plots import plot_audio
 import matplotlib.pyplot as plt
 import matlab.engine
+
+
+def spectral_centroid(x, samplerate=44100):
+    magnitudes = np.abs(np.fft.rfft(x)) # magnitudes of positive frequencies
+    length = len(x)
+    freqs = np.abs(np.fft.fftfreq(length, 1.0/samplerate)[:length//2+1]) # positive frequencies
+    return np.sum(magnitudes*freqs) / np.sum(magnitudes) # return weighted mean
+
 
 # Initialize Matlab Engine and add folders with .m scripts to directory
 eng = matlab.engine.start_matlab()
@@ -32,6 +41,11 @@ PEAQ_res = eng.PQevalAudio(ref, test)
 # Calculate PEASS metrics
 PEASS_res = eng.PEASS_ObjectiveMeasure(ref, test)
 PEASS_res.pop('decompositionFilenames')
+
+# Calculate Audio Spectral Centroid (ASC)
+y, fs = sf.read(test)
+centroid = spectral_centroid(y, fs)
+
 
 # Make global dictionary
 res_dict = {"Reference": ref, "Test": test}

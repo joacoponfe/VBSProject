@@ -18,7 +18,7 @@ from pydsm import audio_weightings
 from weightingFilters import A_weight
 from melbank import compute_mat, hertz_to_bark, bark_to_hertz
 import copy
-from plots import plot_response, plot_spectrogram, plot_audio, plot_harmonics, plot_frame, plot_TEM, plot_wavelets
+from plots import plot_response, plot_spectrogram, plot_audio, plot_harmonics, plot_frame, plot_TEM, plot_wavelets, plot_PV
 from NLD import NLD
 from utils import fracdelay, lagrange, envelope_matching, get_wavelet
 import datetime
@@ -33,10 +33,13 @@ tic = time.time()
 
 
 # Load input audio
-x, Fs, path, duration, frames, channels = audioRead('audios/music/loudnorm/classical_mono_ref.wav')
+# x, Fs, path, duration, frames, channels = audioRead('audios/music/loudnorm/classical_mono_ref.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/music/loudnorm/jazz_mono_ref.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/music/loudnorm/pop_mono_ref.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/music/loudnorm/rock_mono_ref.wav')
+x, Fs, path, duration, frames, channels = audioRead('audios/NLD/tone_100Hz_Amp_1.wav')
+# x, Fs, path, duration, frames, channels = audioRead('audios/multitonal_100_43.wav')
+# x, Fs, path, duration, frames, channels = audioRead('audios/multitonal_38_43_98.wav')
 
 name = basename(path)[:-4]  # Get basename of audio file without extension (will be used when saving output files)
 
@@ -46,8 +49,9 @@ if len(x) == 2:
     x = 0.5 * (x[0] + x[1])
 
 # Define parameters
-num_harmonics = 5  # Number of processed harmonics
-Fcc = 150  # Cut-off frequency [Hz] (MOLINER)
+num_harmonics = 6  # Number of processed harmonics
+#Fcc = 150  # Cut-off frequency [Hz] (MOLINER)
+Fcc = 200
 #Fcc = 250  # Cut-off frequency [Hz] (Según lo que escribí en el Marco Teórico)
 thresh_dB = -70  # Magnitude threshold for peak search [dB]
 inharmonicity_tolerance = 0.05  # Tolerance parameter (tau) for harmonic detection [%]
@@ -57,13 +61,13 @@ freq_window_Hz = 55  # Size of the frequency window for harmonic enhancement [Hz
 #freq_window_Hz = 100
 #freq_window_Hz = 60
 extra_harmonic_gain = 3  # Extra harmonic gain for tonal calibration
-sep_method = 'MCA'  # Select component separation method ('MCA' or 'Median')
+sep_method = 'Median'  # Select component separation method ('MCA' or 'Median')
 
 # STFT parameters
 # nWin = 2756  # Window size (2756 para mantener la relación de 16 entre 4096/256 y 44100/2756)
 # nWin = 1024
-nWin = 1024
-nHop = 128  # Hop size
+nWin = 256
+nHop = 32  # Hop size
 noverlap = nWin - nHop  # Overlap size
 S = 1  # Time-Scale Modification Factor (TSM)
 win = hann(nWin)
@@ -148,8 +152,8 @@ SidelobeAtten = 40  # Window Side Lobe attenuation
 #  See whether it should be changed.
 wint = chebwin(Nt + 1, SidelobeAtten)  # Chebyshev Window (nunca se usa)
 # Apply low pass and high pass filters
-yt_lp, b_lp = LPFt(yt, Nt, SidelobeAtten, Fs=Fs2)
-yt_hp, b_hp = HPFt(yt, Nt, SidelobeAtten, Fs=Fs2)
+yt_lp, b_lp = LPFt(yt, Nt, SidelobeAtten, Fc = Fcc, Fs=Fs2)
+yt_hp, b_hp = HPFt(yt, Nt, SidelobeAtten, Fc = Fcc, Fs=Fs2)
 
 ################################################################
 # Plot LPFt and HPFt  filter response
@@ -175,11 +179,11 @@ yt_hp, b_hp = HPFt(yt, Nt, SidelobeAtten, Fs=Fs2)
 H_HWR = [0.0278, 0.5, 1.8042, 0, -6.0133, 0, 12.2658, 0, -11.8891, 0, 4.3149]
 # Full-wave rectifier (FWR) - NOT RECOMMENDED
 H_FWR = [0.0555, 0, 3.6083, 0, -12.0265, 0, 24.5316, 0, -23.7783, 0, 8.6298]
-# Polynomial Harmonic Synthesizer (PHS)
+# Polynomial Harmonic Synthesizer (PHS) - NO CLASSIFICATION
 H_PHS = [-0.2, -1.2, -3.2, 2.8, 4.8, 0, 0, 0, 0, 0, 0]
 # Clipper (CLP) - NOT RECOMMENDED
 H_CLP = [0, 0.9517, 0, 1.3448, 0, -7.6028, 0, 10.0323, 0, -4.2418, 0]
-# Exponential 1  (EXP1)
+# Exponential 1  (EXP1) - NO CLASSIFICATION
 H_EXP1 = [0.2689, 0.4255, 0.2127, 0.0709, 0.0177, 0.0035, 0, 0, 0, 0, 0]
 # Exponential 2 (EXP2) - GOOD
 H_EXP2 = [0, 1.582, -0.791, 0.2637, -0.0659, 0.0132, -0.0022, 0.0003, 0, 0, 0]
@@ -192,7 +196,6 @@ H_ATSR = [0.0001, 2.7494, -1.0206, -1.0943, -0.1141, 0.7023, -0.4382, -0.3744, 0
 
 h = H_HWR  # Select which transfer function to use
 hN = len(h)  # Number of coefficients in transfer function
-
 for n in np.arange(hN):
     if n == 0:
         yt_low_proc = h[n]  # For n = 0, yt_lp^0 = 1
@@ -203,26 +206,34 @@ h = H_FEXP1
 hN = len(h)
 for n in np.arange(hN):
     if n == 0:
+        yt_low_proc_3 = h[n]
+    else:
+        yt_low_proc_3 = yt_low_proc_3 + h[n] * (yt_low_proc ** n)
+
+h = H_ATSR
+hN = len(h)
+for n in np.arange(hN):
+    if n == 0:
         yt_low_proc_2 = h[n]
     else:
-        yt_low_proc_2 = yt_low_proc_2 + h[n] * (yt_low_proc ** n)
+        yt_low_proc_2 = yt_low_proc_2 + h[n] * (yt_low_proc_3 ** n)
 
 # Create highly distorted signal (Anchor 1 for Audio Quality test)
 # First, we're using one of the NOT RECOMMENDED NLDs
-h = H_CLP
+h = H_FWR
 hN = len(h)
 for n in np.arange(hN):
     if n == 0:
         yt_dist = h[n]
     else:
-        yt_dist = yt_dist + h[n] * (yt_low_proc ** n)
+        yt_dist = yt_dist + h[n] * (yt_lp ** n)
 
 # Apply band pass filter (aplico solo uno, no dos como hace Moliner que en realidad es un LP y después un HP)
 # NBPFt = 200
 NBPF1 = 300
 # NBPF2 = 100
-yt_low_proc_bpf, b_bp = BPFt(yt_low_proc_2, N=NBPF1, Fs=Fs2)
-yt_dist_bpf, b_bp = BPFt(yt_dist, N=NBPF1, Fs=Fs2)       # Distorted signal (Anchor 1)
+yt_low_proc_bpf, b_bp = BPFt(yt_low_proc_2, N=NBPF1, Fc = Fcc, Fs=Fs2)
+yt_dist_bpf, b_bp = BPFt(yt_dist, N=NBPF1, Fc = Fcc, Fs=Fs2)       # Distorted signal (Anchor 1)
 
 ################################################################
 # PLOT RESPONSE OF BPF FOR TRANSIENT CONTENT
@@ -230,7 +241,7 @@ yt_dist_bpf, b_bp = BPFt(yt_dist, N=NBPF1, Fs=Fs2)       # Distorted signal (Anc
 # plot_response(Fs2, w_bp, h_bp, "BPF for Transient Content")
 # plt.show()
 # END PLOT RESPONSE #
-# yt_low_proc_bpf = BPFt2(yt_low_proc_bpf, N=NBPF2, Fs=Fs2)
+# yt_low_proc_bpf = BPFt2(yt_low_proc_bpf, N=NBPF2, Fc = Fcc, Fs=Fs2)
 ################################################################
 
 # Delay adjustment
@@ -244,8 +255,8 @@ else:
     yt_dist_bpf = yt_dist_bpf[0:len(yt_hp)]             # Distorted signal (Anchor 1)
 
 # Gain calculation
-N_gain = 512*4
-R_gain = 64*4
+N_gain = int(512)
+R_gain = int(64)
 pend = len(yt_lp)
 yt_low_padded = np.concatenate((yt_lp, np.zeros(N_gain)))
 yt_low_proc_bpf_padded = np.concatenate((yt_low_proc_bpf, np.zeros(N_gain)))
@@ -328,6 +339,9 @@ delay_transients = Nt / 2 + delay_low  # Delay for transient signal: N(LPFt)/2 +
 # Initialization
 nBins, nFrames = np.shape(Xs)
 
+detected_peaks = [[] for _ in np.arange(nFrames)]
+detected_peaks_values = [[] for _ in np.arange(nFrames)]
+
 f0found = np.zeros(nFrames).astype('int')  # Which region f0 is found, ranges from 0 to 3.
 # 0: not in any region; 1: first region, 2: second region, 3: third region.
 detected_f0 = np.zeros(
@@ -342,7 +356,8 @@ YL = np.zeros((nBins, nFrames)).astype('complex')  # Synthesized tonal spectrogr
 
 # Get frequency bins corresponding to f0max and f0min (Hz -> bin)
 f0max = Fcc * nWin / Fs2  # f0max is set as the cut-off frequency (Fcc)
-f0min = f0max / 4  # f0min is set as f0max/4
+#f0min = f0max / 4  # f0min is set as f0max/4
+f0min = f0max / 8
 
 # Harmonic enhancement variables
 freq_window_size = int(np.round(freq_window_Hz * nWin / Fs2))  # Size of frequency window in bins
@@ -357,7 +372,8 @@ target_weights_timbre = np.zeros((nBins, nFrames))  # Weighting values
 numBands = 7  # Number of bark scale bands
 # Range of frequencies where the weighting will be applied (in Hz)
 # These specify the center frequencies (not edges) of the lowest and highest filters.
-range_min = Fcc / 4
+range_min = Fcc / 8
+#range_min = Fcc / 4
 range_max = Fcc * num_harmonics
 range = [range_min, range_max]
 
@@ -383,7 +399,11 @@ for n in np.arange(nFrames):
 
     # All local maxima in the magnitude spectrum are selected as peaks.
     # Fmin = Fcc / 4
-    [exact, exact_peak] = peakdetect(r, Fs2, thresh_dB, Fcc / 4)
+    [exact, exact_peak] = peakdetect(r, Fs2, thresh_dB, range_min)
+
+    # Save in lists
+    detected_peaks[n] = exact
+    detected_peaks_values[n] = exact_peak
 
     # Possible improvement: change thresh_dB level depending on the dynamic range of the signal.
 

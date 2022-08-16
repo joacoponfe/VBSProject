@@ -50,11 +50,17 @@ def plot_harmonics(x, fs, N):
     plt.plot(freq, x_fft, 'k')
     plt.ylabel('Magnitud [dB]')
     plt.xlabel('Frecuencia [Hz]')
+    plt.ylim([-60,10])
+    plt.xlim([-50,1050])
+    xticks = 100 * np.arange(11)
+    xticklabels = xticks.astype('str')
+    xticklabels[1::2] = ''
+    plt.xticks(xticks,xticklabels)
     plt.show()
 
 
 def plot_frame(X, m, fs, nWin, plot='mag'):
-    """ Todo chequear si hay que transponer X!
+    """
     Utility function to plot specific frame of STFT spectrogram.
     Resulting plot is in frequency domain.
     INPUT:
@@ -123,8 +129,17 @@ def plot_TEM(yt_lp_delay, yt_low_proc_gain, yt_low_proc_gain_matched, envelope_r
     plot_audio(envelope_ref, Fs, color='b', linestyle='--')
     plt.xlim(xlim)
 
-#def plot_F0detection(r, )
-#    """Plots spectrogram of specific frame, peaks detected, borders delimited by f0min and f0max,
-#    F0 search regions, """
 
+def plot_PV(X, m, fs, nWin, thresh_dB, detected_peaks, detected_peaks_values, detected_f0, detected_f0_values, detected_harmonics, detected_harmonics_values):
+    """Plots spectrogram of specific frame, peaks detected, borders delimited by f0min and f0max,
+    F0 search regions, detected f0's and detected harmonics (fk's). """
+    plot_frame(X, m, fs, nWin, plot='mag')
+    plt.hlines(thresh_dB, 0, 2500, linestyle='--', color='k')
+    plt.xlim([-50, 2050])
+    plt.scatter(detected_peaks[m]*fs/nWin, detected_peaks_values[m], color='k', s=150, facecolors='none')
+    plt.scatter(detected_f0[detected_f0[:, m] != 0, m]*fs/nWin, detected_f0_values[detected_f0_values[:, m] != 0, m], color='k', marker='D', label='$f_0$ detectadas')
+    plt.scatter(detected_harmonics[detected_harmonics[:, m] != 0, m]*fs/nWin, detected_harmonics_values[detected_harmonics_values[:, m] != 0, m], color='k', marker='x', label='$f_k$ detectadas')
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
