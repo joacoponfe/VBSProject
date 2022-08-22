@@ -33,11 +33,12 @@ tic = time.time()
 
 
 # Load input audio
-# x, Fs, path, duration, frames, channels = audioRead('audios/music/loudnorm/classical_mono_ref.wav')
+x, Fs, path, duration, frames, channels = audioRead('audios/music/loudnorm/rock_mono_ref.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/music/loudnorm/jazz_mono_ref.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/music/loudnorm/pop_mono_ref.wav')
-# x, Fs, path, duration, frames, channels = audioRead('audios/music/loudnorm/rock_mono_ref.wav')
-x, Fs, path, duration, frames, channels = audioRead('audios/NLD/tone_100Hz_Amp_1.wav')
+# x, Fs, path, duration, frames, channels = audioRead('audios/music/loudnorm/classical_mono_ref.wav')
+
+# x, Fs, path, duration, frames, channels = audioRead('audios/NLD/tone_100Hz_Amp_1.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/multitonal_100_43.wav')
 # x, Fs, path, duration, frames, channels = audioRead('audios/multitonal_38_43_98.wav')
 
@@ -50,9 +51,9 @@ if len(x) == 2:
 
 # Define parameters
 num_harmonics = 6  # Number of processed harmonics
-#Fcc = 150  # Cut-off frequency [Hz] (MOLINER)
+# Fcc = 120  # Cut-off frequency [Hz] (MOLINER)
 Fcc = 200
-#Fcc = 250  # Cut-off frequency [Hz] (Según lo que escribí en el Marco Teórico)
+# Fcc = 250  # Cut-off frequency [Hz] (Según lo que escribí en el Marco Teórico)
 thresh_dB = -70  # Magnitude threshold for peak search [dB]
 inharmonicity_tolerance = 0.05  # Tolerance parameter (tau) for harmonic detection [%]
 alpha_low = 7  # Lower weighting limit in dB/oct
@@ -61,7 +62,7 @@ freq_window_Hz = 55  # Size of the frequency window for harmonic enhancement [Hz
 #freq_window_Hz = 100
 #freq_window_Hz = 60
 extra_harmonic_gain = 3  # Extra harmonic gain for tonal calibration
-sep_method = 'Median'  # Select component separation method ('MCA' or 'Median')
+sep_method = 'MCA'  # Select component separation method ('MCA' or 'Median')
 
 # STFT parameters
 # nWin = 2756  # Window size (2756 para mantener la relación de 16 entre 4096/256 y 44100/2756)
@@ -356,7 +357,7 @@ YL = np.zeros((nBins, nFrames)).astype('complex')  # Synthesized tonal spectrogr
 
 # Get frequency bins corresponding to f0max and f0min (Hz -> bin)
 f0max = Fcc * nWin / Fs2  # f0max is set as the cut-off frequency (Fcc)
-#f0min = f0max / 4  # f0min is set as f0max/4
+# f0min = f0max / 4  # f0min is set as f0max/4
 f0min = f0max / 8
 
 # Harmonic enhancement variables
@@ -373,7 +374,7 @@ numBands = 7  # Number of bark scale bands
 # Range of frequencies where the weighting will be applied (in Hz)
 # These specify the center frequencies (not edges) of the lowest and highest filters.
 range_min = Fcc / 8
-#range_min = Fcc / 4
+# range_min = Fcc / 4
 range_max = Fcc * num_harmonics
 range = [range_min, range_max]
 
