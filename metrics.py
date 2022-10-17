@@ -106,8 +106,24 @@ eng.addpath(PEASS, nargout=0)
 # Temporal Envelope Matching Tests
 # (reference is the target signal before NLD processing; test is the signal after NLD + Envelope Matching)
 genre = 'classical'
-ref = f'audios/TEM_tests/audios_48k/{genre}_ref.wav'
-test = f'audios/TEM_tests/audios_48k/{genre}_VB2_6.wav'
+#sep_method = 'Median'
+#ref = f'audios/TEM_tests/audios_48k/{genre}_mono_ref.wav'
+#test = f'audios/TEM_tests/audios_48k/{genre}_VB_Matlab.wav'
+
+ref = f'audios/finales_48kHz/{genre}_stereo_ref.wav'
+test = f'audios/finales_48kHz/{genre}_stereo_VB4.wav'
+
+#ref = f'audios/TEM_tests/audios_48k/{genre}_{sep_method}_ref.wav'
+#test = f'audios/TEM_tests/audios_48k/{genre}_VB2_{sep_method}_TEM_G.wav'
+#test = f'audios/TEM_tests/audios_48k/{genre}_mono_ref_VB2_{sep_method}_noTEM.wav'
+
+#ref = f'audios/TEM_tests/audios_48k/rock_mono_ref_2_original_MCA.wav'
+#test = f'audios/TEM_tests/audios_48k/rock_mono_ref_2_VB2_MCA_TEM_noG.wav'
+#ref = f'audios/TEM_tests/audios_48k/{genre}_mono_ref_lp_4096.wav'
+#test = f'audios/TEM_tests/audios_48k/{genre}_Median_mixed_lp_4096_with_noise.wav'
+
+#ref = f'audios/TEM_tests/audios_48k/{genre}_yt_lp_delay.wav'
+#test = f'audios/TEM_tests/audios_48k/{genre}_yt_low_proc_gain_matched.wav'
 
 # Calculate PEAQ metrics
 PEAQ_res = eng.PQevalAudio(ref, test)

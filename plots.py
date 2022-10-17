@@ -93,12 +93,12 @@ def plot_audio(x, fs, title='', color='k', label='', linestyle='-', linewidth=0.
     """
     #plt.figure()
     t = np.linspace(0, len(x)/fs, len(x))
-    plt.title(title)
+    plt.title(title,fontsize=11)
     plt.plot(t, x, color=color, label=label, linestyle=linestyle, linewidth=linewidth)
     #plt.grid()
     plt.xlabel('Tiempo [s]')
     plt.ylabel('Amplitud')
-    plt.show()
+    #plt.show()
 
 
 def plot_wavelets(wavelets):
