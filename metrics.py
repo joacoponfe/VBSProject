@@ -100,8 +100,8 @@ eng.addpath(PEAQ, nargout=0)
 eng.addpath(PEASS, nargout=0)
 
 # Determine reference and test files (fs must be 48 kHz)
-#ref = 'PQevalAudio-v1r0/PQevalAudio/audios_48k/AimeeNorwich_drums_lp_4096.wav'
-#test = 'PQevalAudio-v1r0/PQevalAudio/audios_48k/AimeeNorwich_mix_lp_4096_MCA_transient_bior6.8.wav'
+#ref = 'PQevalAudio-v1r0/PQevalAudio/audios_48k/metronome_78BPM_less_beats.wav'
+#test = 'PQevalAudio-v1r0/PQevalAudio/audios_48k/B_fuzzy_transient.wav'
 
 # Temporal Envelope Matching Tests
 # (reference is the target signal before NLD processing; test is the signal after NLD + Envelope Matching)
@@ -111,7 +111,7 @@ genre = 'classical'
 #test = f'audios/TEM_tests/audios_48k/{genre}_VB_Matlab.wav'
 
 ref = f'audios/finales_48kHz/{genre}_stereo_ref.wav'
-test = f'audios/finales_48kHz/{genre}_stereo_VB4.wav'
+test = f'audios/finales_48kHz/{genre}_stereo_VB4_new.wav'
 
 #ref = f'audios/TEM_tests/audios_48k/{genre}_{sep_method}_ref.wav'
 #test = f'audios/TEM_tests/audios_48k/{genre}_VB2_{sep_method}_TEM_G.wav'
@@ -150,22 +150,26 @@ res_df.to_csv('metrics.csv', mode='a', index=True, header=False)
 print("Data appended successfully.")
 
 # STIMULUS A
-# mix_A, fs, path, duration, frames, channels = audioRead('audios/museval/stimulusA.wav')
-# xt_reference_A, fs, path, duration, frames, channels = audioRead('audios/museval/metronome_78BPM.wav')
-# xs_reference_A, fs, path, duration, frames, channels = audioRead('audios/museval/pad.wav')
+#mix_A, fs, path, duration, frames, channels = audioRead('audios/museval/stimulusA.wav')
+#xt_reference, fs, path, duration, frames, channels = audioRead('audios/museval/metronome_78BPM.wav')
+#xs_reference, fs, path, duration, frames, channels = audioRead('audios/museval/pad.wav')
 #xt_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy/A_fuzzy_transient.wav')
 #xs_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy/A_fuzzy_tonal.wav')
+#xt_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy/A_fuzzy_transient_istft_fixed.wav')
+#xs_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy/A_fuzzy_tonal_istft_fixed.wav')
 #xt_MCA, fs, path, duration, frames, channels = audioRead('audios/museval/MCA/A_MCA_transient.wav')
 #xs_MCA, fs, path, duration, frames, channels = audioRead('audios/museval/MCA/A_MCA_tonal.wav')
 #xt_MCA_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy_MCA/A_MCA_fuzzy_transient.wav')
 #xs_MCA_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy_MCA/A_MCA_fuzzy_tonal.wav')
 
 # STIMULUS B
-# mix_B, fs, path, duration, frames, channels = audioRead('audios/museval/stimulusB.wav')
+#mix_B, fs, path, duration, frames, channels = audioRead('audios/museval/stimulusB.wav')
 #xt_reference, fs, path, duration, frames, channels = audioRead('audios/museval/metronome_78BPM_less_beats.wav')
 #xs_reference, fs, path, duration, frames, channels = audioRead('audios/museval/pad.wav')
 #xt_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy/B_fuzzy_transient.wav')
 #xs_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy/B_fuzzy_tonal.wav')
+#xt_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy/B_fuzzy_transient_istft_fixed.wav')
+#xs_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy/B_fuzzy_tonal_istft_fixed.wav')
 #xt_MCA, fs, path, duration, frames, channels = audioRead('audios/museval/MCA/B_MCA_transient.wav')
 #xs_MCA, fs, path, duration, frames, channels = audioRead('audios/museval/MCA/B_MCA_tonal.wav')
 #xt_MCA_fuzzy, fs, path, duration, frames, channels = audioRead('audios/museval/fuzzy_MCA/B_MCA_fuzzy_transient.wav')

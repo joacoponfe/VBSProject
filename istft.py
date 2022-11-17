@@ -28,7 +28,7 @@ def istft(X, nHop, win, win_analysis):
     # Compute two-sided spectrogram
     XF = np.zeros((NFFT, nFrames)).astype(complex)
     XF[0:nBins] = X[0:nBins]
-    XF[nBins:-1] = np.conj(np.flipud(X[1:-2]))
+    XF[nBins:] = np.conj(np.flipud(X[1:-1]))  # Acá estaba el problema que daba una mala reconstrucción (23/10)
 
     # Overlap-add synthesis
     p = 0

@@ -33,10 +33,16 @@ tic = time.time()
 
 
 # Load input audio
-#x, Fs, path, duration, frames, channels = audioRead('audios/music/loudnorm/rock_mono_ref.wav')
-x, Fs, path, duration, frames, channels = audioRead('audios/music/loudnorm/jazz_mono_ref.wav')
+# MUSIC
+x, Fs, path, duration, frames, channels = audioRead('audios/music/loudnorm/rock_mono_ref.wav')
+#x, Fs, path, duration, frames, channels = audioRead('audios/music/loudnorm/jazz_mono_ref.wav')
 #x, Fs, path, duration, frames, channels = audioRead('audios/music/loudnorm/pop_mono_ref.wav')
 #x, Fs, path, duration, frames, channels = audioRead('audios/music/loudnorm/classical_mono_ref.wav')
+
+# TESTS
+# x, Fs, path, duration, frames, channels = audioRead('audios/test/xilo.wav')
+#x, Fs, path, duration, frames, channels = audioRead('audios/museval/stimulusA.wav')
+#x, Fs, path, duration, frames, channels = audioRead('audios/museval/stimulusB.wav')
 
 # NEW AUDIOS
 # x, Fs, path, duration, frames, channels = audioRead('audios/music_new/loudnorm/rock_mono_ref_loudnorm.wav')
@@ -50,7 +56,7 @@ x, Fs, path, duration, frames, channels = audioRead('audios/music/loudnorm/jazz_
 # x, Fs, path, duration, frames, channels = audioRead('audios/museval/AlJames_mix.wav')
 
 # With separated sources
-genre = 'pop'
+#genre = 'pop'
 # x, Fs, path, duration, frames, channels = audioRead(f'audios/music/separated/{genre}_bass.wav')
 # x, Fs, path, duration, frames, channels = audioRead(f'audios/music/separated/{genre}_vocals.wav')
 # x, Fs, path, duration, frames, channels = audioRead(f'audios/music/separated/{genre}_drums.wav')
@@ -80,8 +86,8 @@ extra_harmonic_gain = 3  # Extra harmonic gain for tonal calibration
 sep_method = 'Median'  # Select component separation method ('MCA' or 'Median')
 
 # STFT parameters
-# nWin = 2756  # Window size (2756 para mantener la relación de 16 entre 4096/256 y 44100/2756)
-# nWin = 1024
+#nWin = 2756  # Window size (2756 para mantener la relación de 16 entre 4096/256 y 44100/2756)
+#nWin = 1024
 nWin = 256
 nHop = 32  # Hop size
 noverlap = nWin - nHop  # Overlap size
@@ -98,7 +104,7 @@ x_hp, b_hp1 = HPF1(x, N=N1, Fc=Fc1, Fs=Fs)
 
 # Low-pass filter
 x_lp, b_lp1 = LPF1(x, N=N1, Fc=Fc1, Fs=Fs)
-# x_lp = x  # sólo para fuzzy tests
+#x_lp = x  # sólo para fuzzy tests
 
 #############################################
 # Plot LPF1 and HPF1  filter response
@@ -111,22 +117,22 @@ x_lp, b_lp1 = LPF1(x, N=N1, Fc=Fc1, Fs=Fs)
 
 # Downsampling (hacerlo opcional)
 Fs2 = 4096
-# Fs2 = Fs
+#Fs2 = Fs
 x_lp = resample(x_lp, Fs, Fs2, res_type='polyphase')
 # Polyphase filtering to match values from Matlab resample function.
 
 if sep_method == 'Median':  # Median filtering method (Fuzzy) based on Fitzgerald (2010).
     X, Xs, Xt, Xn, Rs, Rt, Rn = decomposeSTN(x_lp, S, nWin, nHop, Fs2)
     # ISTFT
+    yfull = istft(X, nHop, win, win)
     yt = istft(Xt, nHop, win, win)
     yn = istft(Xn, nHop, win, win)
     ys = istft(Xs, nHop, win, win)
-    yfull = istft(X, nHop, win, win)
 elif sep_method == 'MCA':  # MCA
     # Save low-passed and downsampled audio for MCA processing externally
     #audioWrite(f'audios/MCA/{name}_lp_4096.wav', x_lp, Fs2)
     # Load separated audios (MCA outputs)
-    G_MCA_dB = -4.5  # Amplification / attenuation factor for MCA separated audios
+    G_MCA_dB = 0  # Amplification / attenuation factor for MCA separated audios
     G_MCA = 10 ** (G_MCA_dB / 20)
     yt = G_MCA * audioRead(f'audios/MCA/{name}_lp_4096_MCA_transient_bior6.8-2.wav')[0]  # Transient
     ys = G_MCA * audioRead(f'audios/MCA/{name}_lp_4096_MCA_tonal_bior6.8-2.wav')[0]  # Tonal
@@ -167,8 +173,9 @@ if sep_method == 'Median':
 #audioWrite('audios/museval/fuzzy_MCA/full_MCA_Fuzzy.wav', yfull[nWin:], Fs2)
 
 # Write output files without alignment.
-#audioWrite(f'audios/{name}_{sep_method}_tonal.wav', ys, Fs2)
-#audioWrite(f'audios/{name}_{sep_method}_transient.wav', yt, Fs2)
+audioWrite(f'audios/{name}_{sep_method}_tonal.wav', ys, Fs2)
+audioWrite(f'audios/{name}_{sep_method}_transient.wav', yt, Fs2)
+#audioWrite(f'audios/{name}_{sep_method}_noise.wav', yn, Fs2)
 #########################################################################
 
 # Transient processing (NLD)
@@ -383,7 +390,7 @@ YL = np.zeros((nBins, nFrames)).astype('complex')  # Synthesized tonal spectrogr
 
 # Get frequency bins corresponding to f0max and f0min (Hz -> bin)
 f0max = Fcc * nWin / Fs2  # f0max is set as the cut-off frequency (Fcc)
-# f0min = f0max / 4  # f0min is set as f0max/4
+#f0min = f0max / 4  # f0min is set as f0max/4
 # f0min = f0max / 8
 f0min = f0max / 13
 #f0min = f0max / 15
@@ -828,10 +835,10 @@ y_dist = y_dist[delay_end-1:]  # Final VBS-enhanced distorted signal, filtered b
 now = datetime.datetime.now()
 stamp = now.strftime("%d-%m-%Y_%H-%M-%S")
 
-audioWrite(f'audios/processed/{name}_original_{sep_method}_{stamp}.wav', x_ref, Fs)      # Reference signal
-audioWrite(f'audios/processed/{name}_VB2_{sep_method}_{stamp}.wav', y_filt, Fs)          # VBS enhanced signal
-audioWrite(f'audios/processed/{name}_Anchor1_{sep_method}_{stamp}.wav', y_dist, Fs)      # Anchor 1 for Audio Quality test (highly distorted)
-audioWrite(f'audios/processed/{name}_Anchor2_{sep_method}_{stamp}.wav', x_filt, Fs)      # Anchor 2 for Bass Intensity test (high pass filtered)
+#audioWrite(f'audios/processed/{name}_original_{sep_method}_{stamp}.wav', x_ref, Fs)      # Reference signal
+audioWrite(f'audios/processed/{name}_VB4_{sep_method}_{stamp}.wav', y_filt, Fs)          # VBS enhanced signal
+#audioWrite(f'audios/processed/{name}_Anchor1_{sep_method}_{stamp}.wav', y_dist, Fs)      # Anchor 1 for Audio Quality test (highly distorted)
+#audioWrite(f'audios/processed/{name}_Anchor2_{sep_method}_{stamp}.wav', x_filt, Fs)      # Anchor 2 for Bass Intensity test (high pass filtered)
 
 # Stop timer and calculate elapsed time
 toc = time.time()

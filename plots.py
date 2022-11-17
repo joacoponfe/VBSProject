@@ -32,7 +32,7 @@ def plot_spectrogram(x, fs, nWin, win, noverlap):
     # f, t, Sxx = spectrogram(x, fs,)
     # plt.pcolormesh(t, f, Sxx, shading='gouraud')
     #plt.figure()
-    plt.specgram(x, NFFT=nWin, Fs=fs, window=win, noverlap=noverlap, mode='magnitude', scale='dB', cmap='Greys',
+    plt.specgram(x, NFFT=nWin, Fs=fs, window=win, noverlap=noverlap, mode='magnitude', scale='dB', cmap='viridis',
                  vmin=-180, vmax=0)
     plt.ylabel('Frecuencia [Hz]')
     plt.xlabel('Tiempo [s]')
@@ -42,20 +42,23 @@ def plot_spectrogram(x, fs, nWin, win, noverlap):
     plt.show()
 
 
-def plot_harmonics(x, fs, N):
+def plot_harmonics(x, fs, N, normalize=True):
     """Utility function to plot harmonic spectrum."""
     #x_fft = np.abs(rfft(x, N))
-    x_fft = 20 * np.log10(np.abs(rfft(x, N))/np.max(np.abs(rfft(x, N))))
+    if normalize:
+        x_fft = 20 * np.log10(np.abs(rfft(x, N))/np.max(np.abs(rfft(x, N))))
+    else:
+        x_fft = 20 * np.log10(np.abs(rfft(x,N)))
     freq = rfftfreq(N, 1/fs)
     plt.plot(freq, x_fft, 'k')
     plt.ylabel('Magnitud [dB]')
     plt.xlabel('Frecuencia [Hz]')
-    plt.ylim([-60,10])
-    plt.xlim([-50,1050])
-    xticks = 100 * np.arange(11)
-    xticklabels = xticks.astype('str')
-    xticklabels[1::2] = ''
-    plt.xticks(xticks,xticklabels)
+    #plt.ylim([-60,10])
+    #plt.xlim([-50,1050])
+    #xticks = 100 * np.arange(11)
+    #xticklabels = xticks.astype('str')
+    #xticklabels[1::2] = ''
+    #plt.xticks(xticks,xticklabels)
     plt.show()
 
 
